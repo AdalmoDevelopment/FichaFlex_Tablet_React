@@ -26,16 +26,16 @@ import soundalert from '../assets/audio/soundalert.wav'
 const FichajesPage = ({ onValidCard, userData}) => {
 
     const config = {
-        empresa: import.meta.env.VITE_EMPRESA_GLOBAL,
-        delegacion: import.meta.env.VITE_DELEGACION_GLOBAL,
-        backgroundColor: import.meta.env.VITE_BACKGROUND_COLOR,
-        backgroundColorOptions: import.meta.env.VITE_BACKGROUND_COLOR_OPTIONS,
-        textColor: import.meta.env.VITE_TEXT_COLOR,
-        textColorVersion: import.meta.env.VITE_TEXT_COLOR_VERSION,
-        textColorDatetime: import.meta.env.VITE_TEXT_COLOR_DATETIME,
-        versionPrefix: import.meta.env.VITE_TAG_VERSION_PREFIX,
-        versionSuffix: import.meta.env.VITE_TAG_VERSION_SUFFIX,
-        url: import.meta.env.VITE_HOST_GLOBAL,
+        empresa: import.meta.env.VITE_EMPRESA_GLOBAL  || window.env?.VITE_EMPRESA_GLOBAL || 'DEFAULT',
+        delegacion: import.meta.env.VITE_DELEGACION_GLOBAL  || window.env?.VITE_DELEGACION_GLOBAL || 'DEFAULT',
+        backgroundColor: import.meta.env.VITE_BACKGROUND_COLOR  || window.env?.VITE_BACKGROUND_COLOR || 'DEFAULT',
+        backgroundColorOptions: import.meta.env.VITE_BACKGROUND_COLOR_OPTIONS  || window.env?.VITE_BACKGROUND_COLOR_OPTIONS || 'DEFAULT',
+        textColor: import.meta.env.VITE_TEXT_COLOR  || window.env?.VITE_TEXT_COLOR || 'DEFAULT',
+        textColorVersion: import.meta.env.VITE_TEXT_COLOR_VERSION  || window.env?.VITE_TEXT_COLOR_VERSION || 'DEFAULT',
+        textColorDatetime: import.meta.env.VITE_TEXT_COLOR_DATETIME  || window.env?.VITE_TEXT_COLOR_DATETIME || 'DEFAULT',
+        versionPrefix: import.meta.env.VITE_TAG_VERSION_PREFIX  || window.env?.VITE_TAG_VERSION_PREFIX || 'DEFAULT',
+        versionSuffix: import.meta.env.VITE_TAG_VERSION_SUFFIX  || window.env?.VITE_TAG_VERSION_SUFFIX || 'DEFAULT',
+        url: import.meta.env.VITE_HOST_GLOBAL  || window.env?.VITE_HOST_GLOBAL || 'DEFAULT',
     };
 
     {`

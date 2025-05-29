@@ -7,8 +7,12 @@ $gitRepoUrl = "https://github.com/AdalmoDevelopment/FichaFlex_Tablet.git"
 # Ruta del escritorio del usuario actual
 $desktopPath = [Environment]::GetFolderPath("Desktop")
 
-# Ruta del acceso directo que vamos a crear en el escritorio
-$shortcutPath = Join-Path $desktopPath "Start_FichaFlex.lnk"
+# Ruta del acceso directo principal
+$shortcutStartPath = Join-Path $desktopPath "Start_FichaFlex.lnk"
+$shortcutEnvPath = Join-Path $desktopPath "Ver_Config_ENV.lnk"
+
+# Ruta del archivo .env
+$envFilePath = Join-Path $projectDir ".env"
 
 # Funciones para chequear git y node
 function Check-Git {
@@ -54,32 +58,75 @@ if ($nodeProcs) {
     Start-Sleep 3
 }
 
-# Crear acceso directo en el escritorio para iniciar la app con powershell.exe -NoExit -Command "cd '...' ; npm run dev"
-if (-not (Test-Path $shortcutPath)) {
-    Write-Host "Creando acceso directo en el escritorio..."
+# Crear archivo .env con contenido específico
+$envContent = @"
+# Datos únicos que envía esta tablet junto a los datos de fichaje
+# 'Can Valero'
+# 'Externo'
+# 'Manacor'
+# 'Muro'
+# 'Ses Veles Carton'
+# 'Ses Veles Central'
+# 'Ses Veles Cupula'
+# 'Son Castello'
 
+VITE_DELEGACION_GLOBAL = 'Ses Veles Central'
+
+# Etiqueta versión eg: "SV v1.0.0aws"
+VITE_TAG_VERSION_PREFIX = 'SV'
+# *versión en package.json*
+VITE_TAG_VERSION_SUFFIX = 'aws'
+
+# Visuales
+# ADALMO #7372a8 
+VITE_EMPRESA_GLOBAL = 'adalmo'
+VITE_BACKGROUND_COLOR = '#7372a8'
+VITE_BACKGROUND_COLOR_OPTIONS = '#7372a8'
+VITE_TEXT_COLOR = 'white'
+VITE_TEXT_COLOR_TIME = 'white'
+VITE_TEXT_COLOR_VERSION = 'white'
+VITE_TEXT_COLOR_DATETIME = 'white'
+
+#Aplicación y endpoints
+VITE_HOST_GLOBAL = "192.168.50.112"
+
+#Base de datos
+DB_HOST = ""
+DB_PORT = 3306
+DB_USER = ""
+DB_PASSWORD = ""
+DB_DATABASE = ""
+"@
+
+Set-Content -Path $envFilePath -Value $envContent -Encoding UTF8
+
+# Crear acceso directo para iniciar app
+if (-not (Test-Path $shortcutStartPath)) {
     $shell = New-Object -ComObject WScript.Shell
-    $shortcut = $shell.CreateShortcut($shortcutPath)
-
-    # Ruta a powershell.exe
+    $shortcut = $shell.CreateShortcut($shortcutStartPath)
     $powershellPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
-
-    # Comando para ejecutar en el acceso directo
     $args = "-NoExit -Command `"cd '$projectDir'; npm run dev`""
-
     $shortcut.TargetPath = $powershellPath
     $shortcut.Arguments = $args
     $shortcut.WorkingDirectory = $projectDir
-    $shortcut.WindowStyle = 1  # Normal window
+    $shortcut.WindowStyle = 1
     $shortcut.Description = "Iniciar FichaFlex con npm run dev"
     $shortcut.Save()
-} else {
-    Write-Host "El acceso directo ya existe en el escritorio."
 }
 
-# Iniciar la app directamente también desde este script
+# Crear acceso directo al .env
+if (-not (Test-Path $shortcutEnvPath)) {
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($shortcutEnvPath)
+    $shortcut.TargetPath = $envFilePath
+    $shortcut.WindowStyle = 1
+    $shortcut.Description = "Ver archivo .env del proyecto"
+    $shortcut.Save()
+}
+
+# Iniciar la app
 Write-Host "Iniciando la app con 'npm run dev'..."
 Start-Process "npm" -ArgumentList "run dev"
 
-Write-Host "Listo. Usa el acceso directo en el escritorio para iniciar la app en el futuro."
+Write-Host "Listo. Se creó también un acceso directo al archivo .env en el escritorio."
 Pause

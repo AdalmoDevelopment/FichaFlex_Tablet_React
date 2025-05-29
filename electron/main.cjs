@@ -1,3 +1,6 @@
+const dotenv = require('dotenv');
+dotenv.config();
+
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 
@@ -11,6 +14,7 @@ function createWindow() {
     frame: false,
     kiosk: true,
     webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: true,
       contextIsolation: false,
     },
