@@ -98,7 +98,6 @@ const FichajesPage = ({ onValidCard, userData}) => {
     const playSound = () => {
         const audio = new Audio(soundalert); // Ruta relativa desde /public
         audio.play();
-        alert(soundalert)
     };
 
 
@@ -159,7 +158,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
                             nuestro intento de cumplimiento
                             de la ley ante cualquier inspección laboral.
                         `, duration: 10000, height: '500px', width: '1000px'})
-                        playSound()
+                        // playSound()
                     } else if (userData.data.total_break <= '00:20:00') {
                         showCustomToast({ type: "error", message: `
                             FICHAJE ERRONEO, descanso de comida mínimo de 30’
@@ -167,7 +166,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
                             enviar avisos nominales por escrito de cara a poder justificar
                             nuestro intento de cumplimiento de la ley ante cualquier inspección.
                         `, duration: 10000, height: '500px', width: '1000px'})
-                        playSound()
+                        // playSound()
                     }
                 }
                 userData.data.out_time = curTime;
