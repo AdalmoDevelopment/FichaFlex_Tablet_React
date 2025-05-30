@@ -61,8 +61,20 @@ if ($nodeProcs) {
     Start-Sleep 3
 }
 
-# Crear archivo .env con contenido específico
-$envContent = @"
+# Crear archivo .env con contenido específico si no existe
+if (-not (Test-Path $envFilePath)) {
+    Write-Host "Vamos a configurar los valores de entorno (.env)..."
+
+    $viteHost = Read-Host "VITE_HOST_GLOBAL (IP o dominio del backend)"
+    $dbHost = Read-Host "DB_HOST (servidor base de datos)"
+    $dbPort = Read-Host "DB_PORT (puerto base de datos, default 3306)"
+    if (-not $dbPort) { $dbPort = 3306 }
+
+    $dbUser = Read-Host "DB_USER"
+    $dbPass = Read-Host "DB_PASSWORD"
+    $dbName = Read-Host "DB_DATABASE"
+
+    $envContent = @"
 # Datos únicos que envía esta tablet junto a los datos de fichaje
 VITE_DELEGACION_GLOBAL = 'Ses Veles Central'
 VITE_TAG_VERSION_PREFIX = 'SV'
@@ -74,15 +86,16 @@ VITE_TEXT_COLOR = 'white'
 VITE_TEXT_COLOR_TIME = 'white'
 VITE_TEXT_COLOR_VERSION = 'white'
 VITE_TEXT_COLOR_DATETIME = 'white'
-VITE_HOST_GLOBAL = "192.168.50.112"
-DB_HOST = ""
-DB_PORT = 3306
-DB_USER = ""
-DB_PASSWORD = ""
-DB_DATABASE = ""
+VITE_HOST_GLOBAL = "$viteHost"
+DB_HOST = "$dbHost"
+DB_PORT = $dbPort
+DB_USER = "$dbUser"
+DB_PASSWORD = "$dbPass"
+DB_DATABASE = "$dbName"
 "@
 
-Set-Content -Path $envFilePath -Value $envContent -Encoding UTF8
+    Set-Content -Path $envFilePath -Value $envContent -Encoding UTF8
+}
 
 # Crear acceso directo para iniciar app (con build previo)
 if (-not (Test-Path $shortcutStartPath)) {
@@ -136,7 +149,6 @@ Write-Host "Tarea diaria '$taskName' programada para ejecutarse a las $hora cada
 # Ejecutar la app ahora
 Write-Host "Iniciando la app con 'npm run build' y luego 'npm run start'..."
 npm run build
-Start-Process "npm" -ArgumentList "run start"
+npm run start
 
 Write-Host "Listo. Se crearon accesos directos en el escritorio y el arranque automático tras reinicio."
-Pause
