@@ -41,6 +41,8 @@ if (-not (Test-Path $projectDir)) {
 } else {
     Write-Host "Carpeta existe. Actualizando repo..."
     Set-Location $projectDir
+    git add *
+    git stash
     git pull
 }
 
@@ -119,6 +121,17 @@ if (-not (Test-Path $startupShortcutPath)) {
     $shortcut.WindowStyle = 7
     $shortcut.Save()
 }
+
+# Programar tarea diaria para ejecutar este script y mantener la tablet actualizada
+
+$taskName = "FichaFlex_AutoStart_Diario"
+$scriptPath = "$projectDir\setup.ps1"  # Asegúrate que es la ruta correcta del script en C:
+$hora = "00:00"
+
+# Comando para crear tarea diaria que ejecuta el script con permisos elevados
+schtasks /Create /F /SC DAILY /TN $taskName /TR "powershell -ExecutionPolicy Bypass -File `"$scriptPath`"" /ST $hora /RL HIGHEST
+
+Write-Host "Tarea diaria '$taskName' programada para ejecutarse a las $hora cada día."
 
 # Ejecutar la app ahora
 Write-Host "Iniciando la app con 'npm run build' y luego 'npm run start'..."

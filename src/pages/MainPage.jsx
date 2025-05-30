@@ -5,6 +5,7 @@ import screenFerrimet from '../assets/screen_ferrimet.png';
 import screenDRA from '../assets/screen_dra.png';
 import version from '../../package.json';
 import NetworkStatus from "../components/NetworkStatus";
+import { showCustomToast } from "../components/CustomToast";
 
 const MainPage = ({ onValidCard, setUserData }) => {
   const inputRef = useRef(null);
@@ -61,6 +62,8 @@ const handleKeyDown = async (e) => {
         }
       } catch (err) {
         console.error("Error al validar tarjeta:", err);
+		showCustomToast({ type: "error", message: `Error conectando con la base de datos: ${err}`})
+		
       } finally {
         setCardBuffer(""); // Limpia después de cada intento
       }
