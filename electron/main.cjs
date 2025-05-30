@@ -8,6 +8,8 @@ app.disableHardwareAcceleration(); // evitar errores GPU
 
 let mainWindow;
 
+require(path.join(__dirname, '../api/index.js'));
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     fullscreen: true,
