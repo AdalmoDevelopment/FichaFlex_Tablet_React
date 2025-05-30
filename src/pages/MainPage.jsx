@@ -6,11 +6,13 @@ import screenDRA from '../assets/screen_dra.png';
 import version from '../../package.json';
 import NetworkStatus from "../components/NetworkStatus";
 import { showCustomToast } from "../components/CustomToast";
+import ClipLoader from "react-spinners/ClipLoader";
 
 const MainPage = ({ onValidCard, setUserData }) => {
   const inputRef = useRef(null);
   const [cardBuffer, setCardBuffer] = useState("");
-  
+  const [loading, setLoading] = useState(false);
+
   const config = {
 	empresa: import.meta.env.VITE_EMPRESA_GLOBAL  || window.env?.VITE_EMPRESA_GLOBAL || 'DEFAULT',
 	delegacion: import.meta.env.VITE_DELEGACION_GLOBAL  || window.env?.VITE_DELEGACION_GLOBAL || 'DEFAULT',
@@ -46,6 +48,7 @@ const MainPage = ({ onValidCard, setUserData }) => {
   }, []);
 
 const handleKeyDown = async (e) => {
+  setLoading(true)
   if (e.key === "Enter") {
     if (cardBuffer.length >= 7) {
       try {
@@ -66,6 +69,7 @@ const handleKeyDown = async (e) => {
 		
       } finally {
         setCardBuffer(""); // Limpia después de cada intento
+		setLoading(false)
       }
     }
   } else {
@@ -107,6 +111,14 @@ useEffect(() => {
 	margin: 0,
 	padding: 0,
 	}}>
+	  <div style={{
+		position: 'absolute',
+		top: '90%',
+		left: '48%',
+		fontSize: 26,
+		color: config.textColorVersion,
+		opacity: 0.7
+	  }}>{loading && <ClipLoader color="white" size={100} />}</div> 
 
 	  {/* Fecha top-left */}
 	  <div style={{
@@ -164,9 +176,13 @@ useEffect(() => {
 		fontSize: 60,
 		fontWeight: 'bold',
 		color: 'white',
-		opacity: 0.5
+		opacity: 0.5,
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'space-between',
 	  }}>
-		<NetworkStatus />
+	  <NetworkStatus />
+
 	  </div>
 	    <input
 			ref={inputRef}
