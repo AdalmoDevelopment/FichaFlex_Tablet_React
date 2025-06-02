@@ -21,13 +21,21 @@ const db = mysql.createPool({
   queueLimit: 0
 });
 
+setInterval(async () => {
+  try{
+    await db.query('SELECT 1')
+    console.log(`[${new Date().toISOString()}] Keep-alive enviado`);  
+  } catch(err) {
+    console.error('Error manteniendo conexión: ', err)
+  }
+}, 60000)
+
 app.post('/api/validate', async (req, res) => {
   const { cardNumber } = req.body;
 
   if (!cardNumber) {
     return res.status(400).json({ error: 'Falta cardNumber' });
   }
-  console.log('sip')
   try {
     const [rows] = await db.query(`
       SELECT 

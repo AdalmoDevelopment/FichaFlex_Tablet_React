@@ -43,6 +43,7 @@ if (-not (Test-Path $projectDir)) {
     Set-Location $projectDir
     git add *
     git stash
+    git clean -fd
     git pull
 }
 

@@ -51,7 +51,7 @@
       "package.json",
       ".env"
     ],
-    "win": {
+    "win": {  
       "target": "portable"
     },
     "directories": {
