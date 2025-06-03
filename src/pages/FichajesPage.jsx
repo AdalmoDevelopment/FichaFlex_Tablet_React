@@ -365,10 +365,10 @@ const FichajesPage = ({ onValidCard, userData}) => {
                         boxShadow: '0 4px 16px #0002',
                         color: 'white',
                         fontWeight: 700,
-                        fontSize: 23,
+                        fontSize: 43,
                         
                 }}>
-                    <span style={{opacity: '80%', marginLeft : 150, marginBottom: 5
+                    <span style={{opacity: '80%', marginLeft : 160, marginBottom: 0
                     }}> {pauseState === 'processing' ? useRealTimePause(userData.data.pause) : ''}</span>
                     
                 </div>
