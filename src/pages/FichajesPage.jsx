@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import axios from "axios";
 import entradaImgAdalmo from '../assets/adalmo_ul.png';
 import salidaImgAdalmo  from '../assets/adalmo_ur.png';
@@ -22,6 +22,10 @@ import pauseHolder from '../assets/pause_holder.png';
 import { showCustomToast } from "../components/CustomToast";
 import version from '../../package.json';
 import soundalert from '../assets/audio/soundalert.wav'
+import { processVehicleTrip } from "../funcs/DriverFuncs";
+import VehicleModal from "../components/VehicleModal";
+import Icon from '@mdi/react';
+import { mdiTruckCheck, mdiTruckFast  } from '@mdi/js';
 
 const FichajesPage = ({ onValidCard, userData}) => {
 
@@ -68,31 +72,53 @@ const FichajesPage = ({ onValidCard, userData}) => {
         }
     };
 
-
-    const useRealTimePause = (horaInicio) => {
-    const [pausa, setPausa] = useState("00:00:00");
+    const [modalOpen, setModalOpen] = useState(false);
+    const [vehicleList, setVehicleList] = useState([]);
 
     useEffect(() => {
-        const toSec = h => h.split(":").reduce((a, b) => a * 60 + +b);
-
-        const update = () => {
-        const ahora = new Date();
-        const horaActual = ahora.toTimeString().split(" ")[0];
-
-        const diff = toSec(horaActual) - toSec(horaInicio);
-        const h = String(Math.floor(diff / 3600)).padStart(2, "0");
-        const m = String(Math.floor((diff % 3600) / 60)).padStart(2, "0");
-        const s = String(diff % 60).padStart(2, "0");
-
-        setPausa(`${h}:${m}:${s}`);
+        const fetchVehicleInfo = async () => {
+            try {
+            const response = await axios.post(`http://${config.url}:3000/vehiculos`);
+            const vehicles = response.data
+            .map(vehicle => ({
+                label: vehicle.matricula,
+                value: vehicle.matricula,
+            }));
+            setVehicleList(vehicles);
+            // showCustomToast ({ type: "success", message: "Vehículos cargados correctamente" + JSON.stringify(vehicles) });
+            } catch (error) {
+                console.log(`http://${config.url}:3000/vehiculos`)
+            console.error('Error fetching vehicle options:', error);
+            }
         };
+        fetchVehicleInfo();
+    },[]);
 
-        update(); // llama al inicio
-        const interval = setInterval(update, 1000);
-        return () => clearInterval(interval);
-    }, [horaInicio]);
+    const useRealTimePause = (horaInicio) => {
+        const [pausa, setPausa] = useState("00:00:00");
+        
 
-    return pausa;
+        useEffect(() => {
+            const toSec = h => h.split(":").reduce((a, b) => a * 60 + +b);
+
+            const update = () => {
+            const ahora = new Date();
+            const horaActual = ahora.toTimeString().split(" ")[0];
+
+            const diff = toSec(horaActual) - toSec(horaInicio);
+            const h = String(Math.floor(diff / 3600)).padStart(2, "0");
+            const m = String(Math.floor((diff % 3600) / 60)).padStart(2, "0");
+            const s = String(diff % 60).padStart(2, "0");
+
+            setPausa(`${h}:${m}:${s}`);
+            };
+
+            update(); // llama al inicio
+            const interval = setInterval(update, 1000);
+            return () => clearInterval(interval);
+        }, [horaInicio]);
+
+        return pausa;
     };
     
     const playSound = () => {
@@ -113,7 +139,12 @@ const FichajesPage = ({ onValidCard, userData}) => {
     const pauseState =
         userData.data.pause !== '00:00:00' && userData.data.restart === '00:00:00' ?
         'processing' :
-        'available' 
+        'available'
+    const tripState =
+        userData.data.chofer !== 'yes' ? '' :
+        userData.data.inicio_viaje !== '00:00:00' && userData.data.fin_viaje === '00:00:00' ?
+        'processing' :
+        'available'
     
     const handlePressButton = (action) => {
         if (isStartOfWorkday && action === 'in' && pauseState !== 'processing'){
@@ -240,8 +271,8 @@ const FichajesPage = ({ onValidCard, userData}) => {
                             backgroundSize: 'cover',
                             backgroundPosition: 'center center',
                             borderRadius: 18,
-                            width: 740,
-                            height: 360,
+                            width: 540,
+                            height: 230,
                             display: 'flex',
                             alignItems: 'end',
                             justifyContent: 'center',
@@ -266,8 +297,8 @@ const FichajesPage = ({ onValidCard, userData}) => {
                             backgroundSize: 'cover',
                             backgroundPosition: 'center center',
                             borderRadius: 18,
-                            width: 740,
-                            height: 360,
+                            width: 540,
+                            height: 230,
                             display: 'flex',
                             alignItems: 'end',
                             justifyContent: 'center',
@@ -294,8 +325,8 @@ const FichajesPage = ({ onValidCard, userData}) => {
                             backgroundSize: 'cover',
                             backgroundPosition: 'center center',
                             borderRadius: 18,
-                            width: 740,
-                            height: 360,
+                            width: 540,
+                            height: 230,
                             display: 'flex',
                             alignItems: 'end',
                             justifyContent: 'center',
@@ -319,8 +350,8 @@ const FichajesPage = ({ onValidCard, userData}) => {
                             backgroundSize: 'cover',
                             backgroundPosition: 'center center',
                             borderRadius: 18,
-                            width: 740,
-                            height: 360,
+                            width: 540,
+                            height: 230,
                             display: 'flex',
                             alignItems: 'end',
                             justifyContent: 'center',
@@ -344,7 +375,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
                 justifyContent: 'space-between',
                 alignItems: 'flex-end',
                 width: '100%',
-                marginTop: 30,
+                marginTop: 20,
             }}>
                 {/* Iniciar Pausa */}
                 <div
@@ -372,7 +403,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
                     }}> {pauseState === 'processing' ? useRealTimePause(userData.data.pause) : ''}</span>
                     
                 </div>
-                <div>
+                {/* <div>
                     <h2 style={{
                         fontWeight: 700,
                         fontSize: 35,
@@ -384,7 +415,38 @@ const FichajesPage = ({ onValidCard, userData}) => {
                         {config.versionPrefix}{' '}v{version.version}{config.versionSuffix}
                         
                     </h2>
-                </div>
+                </div> */}
+                {userData.data.chofer === 'yes' &&
+                    <div
+                        onClick={() => setModalOpen(true)}
+                        className="pressed-effect hover:siz"
+                        style={{
+                            backgroundImage: `linear-gradient(rgba(255,255,255,0.0), rgba(0,0,0,0.2))`,
+                            backgroundColor: '#8153',
+                            backgroundRepeat: 'no-repeat',
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center center',
+                            borderRadius: 100,
+                            width: 130,
+                            height: 130,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 4px 16px #0002',
+                            color: '#fff',
+                            fontWeight: 700,
+                            fontSize: 48,
+                        }}
+                    >
+                        {/* {userData.data.inicio_viaje}
+                        <br />
+                        {userData.data.fin_viaje} */}
+                        
+                        {tripState === 'processing' ? <Icon path={mdiTruckCheck} size={'85%'} /> : <Icon path={mdiTruckFast} size={'85%'} />}
+                    </div>
+
+                }
+
                 {/* Salir */}
                 <div
                     onClick={() => onValidCard(false)}
@@ -408,7 +470,17 @@ const FichajesPage = ({ onValidCard, userData}) => {
                     }}>
                 </div>
             </div>
+            <VehicleModal
+            isOpen={modalOpen}
+            onClose={() => setModalOpen(false)}
+            vehicleList={vehicleList}
+            userData={userData}
+            onValidCard={onValidCard}
+            tripState={tripState}
+            />
+
         </div>
+        
     )
 };
 

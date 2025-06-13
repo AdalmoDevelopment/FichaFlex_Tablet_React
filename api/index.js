@@ -40,6 +40,7 @@ app.post('/api/validate', async (req, res) => {
     const [rows] = await db.query(`
       SELECT 
         u.nombre,
+        u.chofer,
         rn.in_time,
         rn.pause_time,
         rn.restart_time,
@@ -47,6 +48,9 @@ app.post('/api/validate', async (req, res) => {
         p.pause,
         p.restart,
         timediff(rn.restart_time, rn.pause_time) as total_break,
+        ifnull(rv.inicio, '00:00:00') as inicio_viaje,
+        ifnull(rv.fin, '00:00:00') as fin_viaje,
+        rv.vehiculos_matricula as last_vehicle,
         rn.intensivo,
         rn.dia_fichaje
       FROM users u
@@ -56,6 +60,10 @@ app.post('/api/validate', async (req, res) => {
         SELECT * FROM pausas
         ORDER BY id DESC
       ) p ON rn.id = p.registro_id
+      LEFT JOIN (
+        SELECT * FROM registros_vehiculos
+        ORDER BY id DESC
+      ) rv ON rn.id = rv.registro_id
       WHERE u.nfc_id = ?
         AND fecha = CURDATE()
       LIMIT 1;
@@ -65,6 +73,7 @@ app.post('/api/validate', async (req, res) => {
       console.log('nop')
       return res.status(404).json({ valid: false, message: 'Tarjeta no válida' });
     }
+    console.log(rows[0])
 
     return res.json({ valid: true, data: rows[0] });
   } catch (error) {
@@ -126,6 +135,98 @@ app.put('/api/update-fichaje', async (req, res) => {
     conn.release();
   }
 });
+
+app.post('/procesarRegistrosVehiculos', async (req, res) => {
+  console.log('Procesando registro de vehículo:', req.body);
+  const {
+    usuario,
+    inicio_viaje,
+    fin_viaje,
+    selectedVehicle,
+    kmsSubmit,
+    kmsProximaRevisionManual
+  } = req.body;
+
+  const esViajeEnCurso = inicio_viaje !== '00:00:00' && fin_viaje === '00:00:00';
+
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // 1. Obtener registro_id
+    const [registroRows] = await conn.query(
+      'SELECT id FROM registros_new WHERE usuario = ? AND fecha = CURDATE()',
+      [usuario]
+    );
+    if (registroRows.length === 0) {
+      await conn.rollback();
+      return res.status(404).json({ success: false, message: 'Registro no encontrado' });
+    }
+
+    const registroId = registroRows[0].id;
+    console.log('Registro ID:', registroId);
+
+    // 2. Actualizar tabla vehiculos
+    await conn.query(
+      'UPDATE vehiculos SET kms = ?, kms_proxima_revision = ? WHERE matricula = ?',
+      [kmsSubmit, kmsProximaRevisionManual, selectedVehicle]
+    );
+
+    // 3. Actualizar registros_new
+    await conn.query(
+      'UPDATE registros_new SET matricula = ?, kms_prox_revision = ? WHERE usuario = ? AND fecha = CURDATE()',
+      [selectedVehicle, kmsProximaRevisionManual, usuario]
+    );
+
+    // 4. Insertar o actualizar viaje
+    if (esViajeEnCurso) {
+      // Finalizar viaje
+      await conn.query(
+        `
+        UPDATE registros_vehiculos 
+        SET fin = CURTIME(), vehiculos_matricula = ?, kms_out = ?
+        WHERE registro_id = ?
+        ORDER BY id DESC LIMIT 1
+      `,
+        [selectedVehicle, kmsSubmit, registroId]
+      );
+    } else {
+      // Nuevo viaje
+      await conn.query(
+        `
+        INSERT INTO registros_vehiculos (vehiculos_matricula, kms_in, inicio, registro_id)
+        VALUES (?, ?, CURTIME(), ?)
+      `,
+        [selectedVehicle, kmsSubmit, registroId]
+      );
+    }
+
+    await conn.commit();
+    res.status(200).json({ success: true });
+  } catch (err) {
+    await conn.rollback();
+    console.error('❌ Error en /procesarRegistrosVehiculos:', err);
+    res.status(500).json({ success: false, message: 'Error procesando registro de vehículo' });
+  } finally {
+    conn.release();
+  }
+});
+
+
+
+app.post('/vehiculos', async (req, res) => {
+  console.log('Recibiendo solicitud de vehículos');
+
+  try {
+    const [rows] = await db.query('SELECT * FROM vehiculos');
+
+    res.json(rows);
+  } catch (error) {
+    console.error('Error en la base de datos:', error);
+    res.status(500).json({ error: 'Error interno' });
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`API backend escuchando en http://localhost:${PORT}`);
