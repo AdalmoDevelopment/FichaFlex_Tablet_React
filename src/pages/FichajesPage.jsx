@@ -241,7 +241,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
             {/* BIENVENIDA */}
             <h2 style={{
                 fontWeight: 700,
-                fontSize: 44,
+                fontSize: 22,
                 textAlign: 'center',
                 paddingBottom: 20,
                 color: config.textColor,
