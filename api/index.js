@@ -138,7 +138,7 @@ app.put('/api/update-fichaje', async (req, res) => {
 
 app.post('/procesarRegistrosVehiculos', async (req, res) => {
   console.log('Procesando registro de vehículo:', req.body);
-  const {
+  let {
     usuario,
     inicio_viaje,
     fin_viaje,
@@ -146,8 +146,12 @@ app.post('/procesarRegistrosVehiculos', async (req, res) => {
     kmsSubmit,
     kmsProximaRevisionManual
   } = req.body;
-
+  
   const esViajeEnCurso = inicio_viaje !== '00:00:00' && fin_viaje === '00:00:00';
+
+  if (kmsProximaRevisionManual === '') {
+    kmsProximaRevisionManual = null;
+  }
 
   const conn = await db.getConnection();
   try {
@@ -168,8 +172,16 @@ app.post('/procesarRegistrosVehiculos', async (req, res) => {
 
     // 2. Actualizar tabla vehiculos
     await conn.query(
-      'UPDATE vehiculos SET kms = ?, kms_proxima_revision = ? WHERE matricula = ?',
-      [kmsSubmit, kmsProximaRevisionManual, selectedVehicle]
+      `UPDATE vehiculos
+        SET 
+          kms = ?, 
+          kms_proxima_revision = CASE 
+            WHEN ? IS NOT NULL THEN ?
+            ELSE kms_proxima_revision
+          END
+        WHERE matricula = ?;
+      `,
+      [kmsSubmit, kmsProximaRevisionManual, kmsProximaRevisionManual, selectedVehicle]
     );
 
     // 3. Actualizar registros_new

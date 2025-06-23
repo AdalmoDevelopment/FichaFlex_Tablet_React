@@ -69,7 +69,7 @@ const handleKeyDown = async (e) => {
 		
       } finally {
         setCardBuffer(""); // Limpia después de cada intento
-		setLoading(false)
+		
       }
     }
   } else {
@@ -78,6 +78,7 @@ const handleKeyDown = async (e) => {
       setCardBuffer((prev) => prev + e.key);
     }
   }
+  setLoading(false)
 };
 
 useEffect(() => {

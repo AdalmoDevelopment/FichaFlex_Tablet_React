@@ -21,7 +21,7 @@ export default function VehicleModal({
   const [focusedInput, setFocusedInput] = useState('kmsSubmit');
 
   const handleSubmit = (e) => {
-    if (kmsSubmit === '' || kmsProximaRevision === '' || selectedVehicle === '') {
+    if (kmsSubmit === ''  || selectedVehicle === '') {
       showCustomToast({ type: 'error', message: 'Por favor, completa todos los campos.' });
     } else {
       e.preventDefault();
@@ -83,7 +83,7 @@ export default function VehicleModal({
         
         <div className='flex '>
           <div className='w-1/2'>
-
+          
 
         <div style={{width: '100%', padding: '10px', marginTop: '10px', fontSize: '1.5rem', color: '#856594', border: '10px solid #856594', borderRadius: '10px', textAlign: 'center' }}>
           <Select
@@ -119,10 +119,10 @@ export default function VehicleModal({
         />
         
         <button
-          type={kmsSubmit === '' || kmsProximaRevision === '' || selectedVehicle === '' ? 'button' : 'submit'}
+          type={kmsSubmit === ''  || selectedVehicle === '' ? 'button' : 'submit'}
           className={``}
           style={{
-              width: '100%', padding: '10px', marginTop: '10px', fontSize: '2.5rem', backgroundColor: (kmsSubmit === '' || kmsProximaRevision === '' || selectedVehicle === '' ? 'gray' : '#856594'), color: 'white', borderRadius: '10px'
+              width: '100%', padding: '10px', marginTop: '10px', fontSize: '2.5rem', backgroundColor: (kmsSubmit === ''  || selectedVehicle === '' ? 'gray' : '#856594'), color: 'white', borderRadius: '10px'
             }}
           
         >
