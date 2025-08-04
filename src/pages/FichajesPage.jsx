@@ -180,7 +180,9 @@ const FichajesPage = ({ onValidCard, userData}) => {
                 userData.data.in_time = curTime;
                 handleRequest(action, 'Jornada iniciada')
             } else if (action === 'out') {
-                if (userData.data.intensivo === 'no'){
+                const currentMonth = new Date().getMonth(); // 0 = enero, 7 = agosto
+
+                if (currentMonth !== 7 && userData.data.intensivo === 'no'){
                     if (userData.data.total_break <= '00:00:00') {
                         showCustomToast({ type: "error", message: `
                             FICHAJE ERRONEO, faltan los fichajes de la comida.
