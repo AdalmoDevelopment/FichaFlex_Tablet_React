@@ -155,7 +155,7 @@ useEffect(() => {
 		<img
 		src={backgroundByCompany[config.empresa]}
 		alt="Logo"
-		style={{ width: '70%', height: 'auto', opacity: 0.8 }}
+		style={{ width: '70%', height: 'auto' }}
 		/>
 	  </div>
 	  {/* Esquina inferior derecha */}
