@@ -119,7 +119,7 @@ useEffect(() => {
 		fontSize: 26,
 		color: config.textColorVersion,
 		opacity: 0.7
-	  }}>{loading && <ClipLoader color="white" size={100} />}</div> 
+	  }}>{loading && <ClipLoader color="gray" size={100} />}</div> 
 
 	  {/* Fecha top-left */}
 	  <div style={{
@@ -165,7 +165,7 @@ useEffect(() => {
 		bottom: 18,
 		fontSize: 26,
 		color: config.textColorVersion,
-		opacity: 0.5
+		opacity: 0.8
 	  }}>
 		{config.versionPrefix}{' '}v{version.version}{config.versionSuffix}
 	  </div>

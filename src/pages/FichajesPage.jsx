@@ -226,7 +226,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
 
     return (
         <div style={{
-            background: `linear-gradient(rgba(255,255,255,0.0), rgba(0,0,0,0.2)), ${config.backgroundColorOptions}`,
+            background: `linear-gradient(rgba(255,255,255,0.0), rgba(0,0,0,0.1)), ${config.backgroundColorOptions}`,
             minHeight: '100vh',
             width: '100vw',
             height: '100vh',
@@ -247,7 +247,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
                 textAlign: 'center',
                 paddingBottom: 20,
                 color: config.textColor,
-                opacity: 0.7
+                opacity: 0.8
             }}> 
                 Bienvenido {userData.data.nombre}, selecciona la opción:
             </h2>

@@ -21,7 +21,7 @@ export const showCustomToast = ({ type = "success", message = "Mensaje por defec
   };
 
   toast(message, {
-    duration: duration || 5000,
+    duration: duration || 3000,
     position: "top-center",
     style: {
       ...baseStyle,
