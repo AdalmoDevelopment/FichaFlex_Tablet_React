@@ -2,8 +2,11 @@
 import express from 'express';
 import mysql from 'mysql2/promise';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import dotenv from 'dotenv'; 
 dotenv.config();
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { version } = require('../package.json');
 
 const app = express();
 const PORT = 3000;
@@ -22,13 +25,42 @@ const db = mysql.createPool({
 });
 
 setInterval(async () => {
-  try{
-    await db.query('SELECT 1')
-    console.log(`[${new Date().toISOString()}] Keep-alive enviado`);  
-  } catch(err) {
-    console.error('Error manteniendo conexión: ', err)
+  try {
+    await db.query('SELECT 1');
+    console.log(`[${new Date().toISOString()}] Keep-alive enviado`);
+
+    const delegacion = process.env.VITE_DELEGACION_GLOBAL;
+
+    try {
+      // 1. Verificar si la delegación ya existe
+      const [rows] = await db.query(
+        'SELECT id FROM tablets WHERE delegacion = ?',
+        [delegacion]
+      );
+
+      if (rows.length > 0) {
+        // 2. Si existe, actualizar
+        const result = await db.query(
+          'UPDATE tablets SET version = ?, last_conn = NOW() WHERE delegacion = ?',
+          [version, delegacion]
+        ); 
+      } else {
+        // 3. Si no existe, insertar
+        const result = await db.query(
+          'INSERT INTO tablets (delegacion, version, last_conn) VALUES (?, ?, NOW())',
+          [delegacion, version]
+        ); 
+      }
+
+    } catch (error) {
+      console.error('Error en operación con base de datos:', error);
+    }
+
+  } catch (err) {
+    console.error('Error manteniendo conexión: ', err);
   }
-}, 60000)
+}, 6000);
+
 
 app.post('/api/validate', async (req, res) => {
   const { cardNumber } = req.body;
