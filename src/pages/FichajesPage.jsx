@@ -473,12 +473,12 @@ const FichajesPage = ({ onValidCard, userData}) => {
                 </div>
             </div>
             <VehicleModal
-            isOpen={modalOpen}
-            onClose={() => setModalOpen(false)}
-            vehicleList={vehicleList}
-            userData={userData}
-            onValidCard={onValidCard}
-            tripState={tripState}
+                isOpen={modalOpen}
+                onClose={() => setModalOpen(false)}
+                vehicleList={vehicleList}
+                userData={userData}
+                onValidCard={onValidCard}
+                tripState={tripState}
             />
 
         </div>

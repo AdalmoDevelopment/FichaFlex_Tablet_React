@@ -256,8 +256,6 @@ app.post('/procesarRegistrosVehiculos', async (req, res) => {
   }
 });
 
-
-
 app.post('/vehiculos', async (req, res) => {
   console.log('Recibiendo solicitud de vehículos');
 
@@ -270,7 +268,6 @@ app.post('/vehiculos', async (req, res) => {
     res.status(500).json({ error: 'Error interno' });
   }
 });
-
 
 app.listen(PORT, () => {
   console.log(`API backend escuchando en http://localhost:${PORT}`);

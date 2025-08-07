@@ -43,8 +43,6 @@ import { ToastContainer } from "./components/CustomToast";
 import SnowCanvas from "./components/SnowCanvas";
 
 const isWinter = new Date().getMonth() === 11; 
-{isWinter && <Snowfall />}
-
 
 const App = () => {
   const [nfcValidated, setNfcValidated] = useState(null);
@@ -55,7 +53,7 @@ const App = () => {
     <>
     <ToastContainer />
     
-    {isWinter && <SnowCanvas/>}
+    {!isWinter && <SnowCanvas/>}
 
       {!nfcValidated ? (
         <MainPage onValidCard={setNfcValidated} setUserData={setUserData} />
