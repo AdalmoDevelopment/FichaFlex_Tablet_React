@@ -53,7 +53,7 @@ const App = () => {
     <>
     <ToastContainer />
     
-    {!isWinter && <SnowCanvas/>}
+    {isWinter && <SnowCanvas/>}
 
       {!nfcValidated ? (
         <MainPage onValidCard={setNfcValidated} setUserData={setUserData} />
