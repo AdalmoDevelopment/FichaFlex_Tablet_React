@@ -26,7 +26,7 @@ const db = mysql.createPool({
 
 setInterval(async () => {
   try {
-    await db.query('SELECT 1');
+    await db.query('SELECT 1'); // keep-alive
     console.log(`[${new Date().toISOString()}] Keep-alive enviado`);
 
     const delegacion = process.env.VITE_DELEGACION_GLOBAL;
@@ -38,19 +38,39 @@ setInterval(async () => {
         [delegacion]
       );
 
+      let tabletId;
       if (rows.length > 0) {
-        // 2. Si existe, actualizar
-        const result = await db.query(
+        tabletId = rows[0].id;
+
+        // 2. Si existe, actualizar last_conn
+        await db.query(
           'UPDATE tablets SET version = ?, last_conn = NOW() WHERE delegacion = ?',
           [version, delegacion]
-        ); 
+        );
       } else {
         // 3. Si no existe, insertar
-        const result = await db.query(
+        const [insertResult] = await db.query(
           'INSERT INTO tablets (delegacion, version, last_conn) VALUES (?, ?, NOW())',
           [delegacion, version]
-        ); 
+        );
+        tabletId = insertResult.insertId;
       }
+
+      // 4. Ahora que tenemos el tabletId, cerramos un log abierto si existiera
+      await db.query(
+        `UPDATE tablets_logs 
+         SET time_fixed = NOW()
+         WHERE id_tablet = ?
+           AND time_fixed IS NULL
+           AND id = (
+             SELECT id FROM (
+               SELECT MAX(id) AS id
+               FROM tablets_logs
+               WHERE id_tablet = ? AND time_fixed IS NULL
+             ) AS sub
+           )`,
+        [tabletId, tabletId]
+      );
 
     } catch (error) {
       console.error('Error en operación con base de datos:', error);
@@ -60,7 +80,6 @@ setInterval(async () => {
     console.error('Error manteniendo conexión: ', err);
   }
 }, 6000);
-
 
 app.post('/api/validate', async (req, res) => {
   const { cardNumber } = req.body;
@@ -121,12 +140,17 @@ app.put('/api/update-fichaje', async (req, res) => {
   const conn = await db.getConnection();
   await conn.beginTransaction();
 
-  const salida_nocturna = action === 'out' && in_time !== '00:00:00' && out_time < '08:00:00'
+  let fechaTarget = 'CURDATE()';
+
+  if (action === 'out' && in_time && out_time < '08:00:00') {
+    fechaTarget = 'DATE_SUB(CURDATE(), INTERVAL 1 DAY)';
+  }
+
   const query = `
-      UPDATE registros_new
-      SET in_time = ?, out_time = ?, pause_time = ?, restart_time = ?, delegacion_fichaje = ?
-      WHERE usuario = ? AND fecha = CURDATE()${salida_nocturna ? '-1' : ''}
-    `
+    UPDATE registros_new
+    SET in_time = ?, out_time = ?, pause_time = ?, restart_time = ?, delegacion_fichaje = ?
+    WHERE usuario = ? AND fecha = ${fechaTarget}
+  `;
   console.log('la query es: ' + query)
   try {
     await conn.query(query, [in_time, out_time, pause_time, restart_time, delegacion, nombre]);
