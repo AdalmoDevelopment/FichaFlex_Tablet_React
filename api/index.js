@@ -103,21 +103,31 @@ app.post('/api/validate', async (req, res) => {
         ifnull(rv.fin, '00:00:00') as fin_viaje,
         rv.vehiculos_matricula as last_vehicle,
         rn.intensivo,
-        rn.dia_fichaje,
-        u.nfc_id
+        rn.dia_fichaje
       FROM users u
-      LEFT JOIN registros_new rn
-        ON u.nombre = rn.usuario
+      LEFT JOIN registros_new rn 
+          ON u.nombre = rn.usuario
       LEFT JOIN (
-        SELECT * FROM pausas
-        ORDER BY id DESC
+          SELECT p1.*
+          FROM pausas p1
+          INNER JOIN (
+              SELECT registro_id, MAX(id) AS last_id
+              FROM pausas
+              GROUP BY registro_id
+          ) p2 ON p1.id = p2.last_id
       ) p ON rn.id = p.registro_id
       LEFT JOIN (
-        SELECT * FROM registros_vehiculos
-        ORDER BY id DESC
+          SELECT rv1.*
+          FROM registros_vehiculos rv1
+          INNER JOIN (
+              SELECT registro_id, MAX(id) AS last_id
+              FROM registros_vehiculos
+              GROUP BY registro_id
+          ) rv2 ON rv1.id = rv2.last_id
       ) rv ON rn.id = rv.registro_id
       WHERE u.nfc_id = ?
-        AND fecha = CURDATE()
+        AND rn.fecha = CURDATE()
+      ORDER BY rn.id DESC
       LIMIT 1;
     `, [cardNumber]);
 
