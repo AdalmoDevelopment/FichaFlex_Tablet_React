@@ -7,8 +7,15 @@ import version from '../../package.json';
 import NetworkStatus from "../components/NetworkStatus";
 import { showCustomToast } from "../components/CustomToast";
 import ClipLoader from "react-spinners/ClipLoader";
+import { useNetwork } from "../context/NetworkContext";  
+import { useOfflineStore } from "../context/OfflineStoreContext";
 
 const MainPage = ({ onValidCard, setUserData }) => {
+
+  const { addUserIfNotExists, updateUser, offlineUsers } = useOfflineStore();
+
+  const { isOnline } = useNetwork();
+
   const inputRef = useRef(null);
   const [cardBuffer, setCardBuffer] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,28 +55,81 @@ const MainPage = ({ onValidCard, setUserData }) => {
   }, []);
 
 const handleKeyDown = async (e) => {
-  setLoading(true)
+  setLoading(true);
+  console.log("A ver si llega");
+
   if (e.key === "Enter") {
     if (cardBuffer.length >= 7) {
-      try {
-        const response = await axios.post(`http://${config.url}:3000/api/validate`, {
-          cardNumber: cardBuffer
-        });
+      if (isOnline) {
+        // 🔹 flujo online normal
+        try {
+          const response = await axios.post(`http://${config.url}:3000/api/validate`, {
+            cardNumber: cardBuffer
+          });
 
-        if (response.data.valid) {
-          onValidCard(true);
-          setUserData(response.data);
-          console.log("✅ Tarjeta válida:", response);
-        } else {
-          console.log("❌ Tarjeta no válida");
+          if (response.data.valid) {
+			onValidCard(true);
+
+			// 🔹 Mezclar datos de DB con offline
+			const offlineData = offlineUsers[cardBuffer] || {};
+			const merged = {
+				...response.data.data,
+				...offlineData, // offline tiene prioridad
+			};
+
+			setUserData({ data: merged });
+
+			// opcional: actualizar también el store para mantenerlo fresco
+			updateUser(cardBuffer, merged);
+
+			console.log("✅ Tarjeta válida:", merged);
+          } else {
+            console.log("❌ Tarjeta no válida");
+            showCustomToast({ type: "error", message: "Tarjeta no válida" });
+          }
+        } catch (err) {
+          console.error("Error al validar tarjeta:", err);
+          showCustomToast({ type: "error", message: `Error conectando con la base de datos: ${err}` });
+        } finally {
+          setCardBuffer(""); // Limpia después de cada intento
         }
-      } catch (err) {
-        console.error("Error al validar tarjeta:", err);
-		showCustomToast({ type: "error", message: `Error conectando con la base de datos: ${err}`})
-		
-      } finally {
-        setCardBuffer(""); // Limpia después de cada intento
-		
+      } else {
+        // 🔹 flujo offline → placeholder
+        console.log("📴 Validación offline con tarjeta:", cardBuffer);
+
+		// 📴 Validación offline
+		onValidCard(true);
+
+		// 🔹 ¿Ya existe este usuario en el store?
+		if (offlineUsers[cardBuffer]) {
+		// Ya lo tenías → usa esos datos
+		setUserData({
+			data: {
+			...offlineUsers[cardBuffer],
+			nfc_id: cardBuffer
+			}
+		});
+		} else {
+		// No existe → créalo en el store y en userData
+		addUserIfNotExists(cardBuffer);
+
+		setUserData({
+			data: {
+			nfc_id: cardBuffer,
+			in_time: "00:00:00",
+			out_time: "00:00:00",
+			pause_time: "00:00:00",
+			restart_time: "00:00:00",
+			pause: "00:00:00",
+			restart: "00:00:00",
+			intensivo: "no",
+			dia_fichaje: "lunes",
+			}
+		});
+		}
+
+        showCustomToast({ type: "success", message: "Tarjeta validada (modo offline)" });
+        setCardBuffer("");
       }
     }
   } else {
@@ -78,8 +138,10 @@ const handleKeyDown = async (e) => {
       setCardBuffer((prev) => prev + e.key);
     }
   }
-  setLoading(false)
+
+  setLoading(false);
 };
+
 
 useEffect(() => {
   inputRef.current?.focus();
@@ -131,7 +193,7 @@ useEffect(() => {
 		color: config.textColorDatetime,
 		opacity: 0.8
 	  }}>
-		{fecha}
+		{fecha} <p style={{fontSize: 10}}>{JSON.stringify(window.sqlite.logsDB?.getPendingLogs())}</p>
 	  </div>
 	  {/* Hora top-right */}
 	  <div style={{

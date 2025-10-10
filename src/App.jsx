@@ -39,12 +39,21 @@
 import React, { useEffect, useState } from "react";
 import MainPage from "./pages/MainPage";
 import FichajesPage from "./pages/FichajesPage";
+import FichajesPageOffline from "./pages/FichajesPageOffline";
 import { ToastContainer } from "./components/CustomToast";
 import SnowCanvas from "./components/SnowCanvas";
+import { useNetwork } from "./context/NetworkContext";
 
 const isWinter = new Date().getMonth() === 11; 
 
 const App = () => {
+  useEffect(() => {
+  console.log("window.test?", window);
+  window.test?.ping?.();
+}, []);
+
+  const { isOnline } = useNetwork();
+
   const [nfcValidated, setNfcValidated] = useState(null);
   const [userData, setUserData] = useState(null);
   
@@ -53,13 +62,18 @@ const App = () => {
     <>
     <ToastContainer />
     
+    
     {isWinter && <SnowCanvas/>}
 
       {!nfcValidated ? (
         <MainPage onValidCard={setNfcValidated} setUserData={setUserData} />
-      ) : (
+      ) : nfcValidated && isOnline ? (
         <FichajesPage onValidCard={setNfcValidated} userData={userData} />
-      )}
+      ) :
+      (
+        <FichajesPageOffline onValidCard={setNfcValidated} userData={userData} />
+      )
+      }
     </>
     
   );

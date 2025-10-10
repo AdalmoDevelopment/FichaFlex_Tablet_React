@@ -1,16 +1,22 @@
-const { contextBridge } = require('electron');
-const dotenv = require('dotenv');
-const fs = require('fs');
-const path = require('path');
+try {
+  console.log("🔍 preload cargando...");
 
-// Ruta del .env fuera del paquete, editable por cada tablet
-const envPath = path.join(__dirname, '..', '.env');
+  const { contextBridge } = require("electron");
+  const path = require("path");
 
-let env = {};
+  console.log("✅ Electron y path cargados");
 
-if (fs.existsSync(envPath)) {
-  const parsed = dotenv.parse(fs.readFileSync(envPath));
-  env = parsed;
+  const dbPath = path.join(__dirname, "db.cjs");
+  console.log("Intentando cargar DB desde:", dbPath);
+  const logsDB = require(dbPath);
+
+  console.log("✅ DB cargada correctamente");
+
+  contextBridge.exposeInMainWorld("sqlite", {
+    logsDB,
+  })
+
+  console.log("✅ test expuesto correctamente");
+} catch (err) {
+  console.error("💥 Error dentro del preload:", err);
 }
-
-contextBridge.exposeInMainWorld('env', env);

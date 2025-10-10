@@ -54,6 +54,9 @@ Set-Location $projectDir
 Write-Host "Instalando dependencias..."
 npm install
 
+Write-Host "Reconstruyendo módulos nativos..."
+npm run rebuild
+
 # Matar procesos node.exe
 $nodeProcs = Get-Process -Name node -ErrorAction SilentlyContinue
 if ($nodeProcs) {
