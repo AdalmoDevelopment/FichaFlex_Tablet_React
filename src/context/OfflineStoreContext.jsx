@@ -35,9 +35,8 @@ export const OfflineStoreProvider = ({ children }) => {
         };
       }); 
     } catch (error) {
-      alert(error)
+      console.log(error)
     }
-    alert(JSON.stringify(offlineUsers))
   };
 
   // 🔹 actualizar un campo del usuario

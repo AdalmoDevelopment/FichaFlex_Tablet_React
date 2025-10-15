@@ -166,7 +166,7 @@ app.put('/api/update-fichaje', async (req, res) => {
       pause_time = CASE WHEN ? <> '00:00:00' THEN ? ELSE pause_time END,
       restart_time = CASE WHEN ? <> '00:00:00' THEN ? ELSE restart_time END,
       delegacion_fichaje = CASE WHEN ? IS NOT NULL THEN ? ELSE delegacion_fichaje END
-    WHERE nfc_id = ? AND fecha = ${fechaTarget}
+    WHERE users.nfc_id = ? AND fecha = ${fechaTarget}
   `;
   console.log('la query es: ' + query)
   try {

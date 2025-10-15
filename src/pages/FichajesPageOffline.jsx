@@ -25,10 +25,13 @@ import Icon from '@mdi/react';
 import { mdiTruckCheck, mdiTruckFast } from '@mdi/js';
 import { useOfflineStore } from "../context/OfflineStoreContext";
 import config from "../context/ConfigEnv";
+import { useHandlePressButton } from "../funcs/useHandlePressButton";
 
 const FichajesPageOffline = ({ onValidCard, userData }) => {
 
   const { addUserIfNotExists, updateUser, offlineUsers } = useOfflineStore();
+
+  const handlePressButton  = useHandlePressButton();
 
   const buttonBackgroundByCompany = {
     entradaImg : { adalmo: entradaImgAdalmo, ferrimet: entradaImgFerrimet, dra: entradaImgDRA },
@@ -37,7 +40,7 @@ const FichajesPageOffline = ({ onValidCard, userData }) => {
     finalComidaImg : { adalmo: finalComidaImgAdalmo, ferrimet: finalComidaImgFerrimet, dra: finalComidaImgDRA }
   };
 
-  const playSound = () => new Audio(soundalert).play();
+//   const playSound = () => new Audio(soundalert).play();
 
   const isStartOfWorkday = userData.data.in_time !== '00:00:00';
   const breakState =
@@ -53,48 +56,48 @@ const FichajesPageOffline = ({ onValidCard, userData }) => {
       ? 'processing'
       : 'available';
 
-const handlePressButton = (action) => {
-  const curTime = new Date().toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+// const handlePressButton  = (action) => {
+//   const curTime = new Date().toLocaleTimeString("es-ES", {
+//     hour: "2-digit",
+//     minute: "2-digit",
+//     second: "2-digit",
+//   });
 
-  // Aseguramos que este user exista en el store
-  addUserIfNotExists(userData.data.nfc_id);
+//   // Aseguramos que este user exista en el store
+//   addUserIfNotExists(userData.data.nfc_id);
  
-  if (action === "in") {
-    updateUser(userData.data.nfc_id, { in_time: curTime });
-    showCustomToast({ type: "success", message: "Jornada iniciada" });
-  } else if (action === "out") {
-    updateUser(userData.data.nfc_id, { out_time: curTime });
-    showCustomToast({ type: "success", message: "Jornada finalizada" });
-  } else if (action === "pause") {
-    updateUser(userData.data.nfc_id, { pause_time: curTime });
-    showCustomToast({ type: "success", message: "Comida iniciada" });
-  } else if (action === "restart") {
-    updateUser(userData.data.nfc_id, { restart_time: curTime });
-    showCustomToast({ type: "success", message: "Comida finalizada" });
-  } else if (action === "pause_restart") {
-    if (pauseState === "available") {
-      updateUser(userData.data.nfc_id, { pause: curTime });
-      showCustomToast({ type: "success", message: "Pausa iniciada" });
-    } else {
-      updateUser(userData.data.nfc_id, { restart: curTime });
-      showCustomToast({ type: "success", message: "Pausa terminada" });
-    }
-  }
-    if (action !== "pause_restart") {
-        window.sqlite.logsDB?.saveOfflineLog({
-        data: userData.data,
-        field: `${action}_time`,
-        value: curTime
-        });
-    }
+//   if (action === "in") {
+//     updateUser(userData.data.nfc_id, { in_time: curTime });
+//     showCustomToast({ type: "success", message: "Jornada iniciada" });
+//   } else if (action === "out") {
+//     updateUser(userData.data.nfc_id, { out_time: curTime });
+//     showCustomToast({ type: "success", message: "Jornada finalizada" });
+//   } else if (action === "pause") {
+//     updateUser(userData.data.nfc_id, { pause_time: curTime });
+//     showCustomToast({ type: "success", message: "Comida iniciada" });
+//   } else if (action === "restart") {
+//     updateUser(userData.data.nfc_id, { restart_time: curTime });
+//     showCustomToast({ type: "success", message: "Comida finalizada" });
+//   } else if (action === "pause_restart") {
+//     if (pauseState === "available") {
+//       updateUser(userData.data.nfc_id, { pause: curTime });
+//       showCustomToast({ type: "success", message: "Pausa iniciada" });
+//     } else {
+//       updateUser(userData.data.nfc_id, { restart: curTime });
+//       showCustomToast({ type: "success", message: "Pausa terminada" });
+//     }
+//   }
+//     if (action !== "pause_restart") {
+//         window.sqlite.logsDB?.saveOfflineLog({
+//         data: userData.data,
+//         field: `${action}_time`,
+//         value: curTime
+//         });
+//     }
 
 
-  onValidCard(false);
-};
+//   onValidCard(false);
+// };
 
 
     const useRealTimePause = (horaInicio) => {
@@ -165,7 +168,7 @@ const handlePressButton = (action) => {
                 <div style={{ display: 'flex', gap: 60 }}>
                     {/* Entrada Jornada */}
                     <div
-                        onClick={() => handlePressButton('in')}
+                        onClick={() => handlePressButton ('in', userData, onValidCard)}
                         className="pressed-effect"
                         style={{
                             backgroundImage: `linear-gradient${breakState !== 'processing' && pauseState !== 'processing' && isStartOfWorkday ? '(rgba(0,0,0,0.4), rgba(0,0,0,0.3))' : '(rgba(255,255,255,0.0), rgba(0,0,0,0.2))'}, url(${breakState === 'processing' || pauseState === 'processing' ? pauseHolder : buttonBackgroundByCompany.entradaImg[config.empresa]})`,
@@ -191,7 +194,7 @@ const handlePressButton = (action) => {
                     </div>
                     {/* Salida Jornada */}
                     <div 
-                        onClick={() => handlePressButton('out')}
+                        onClick={() => handlePressButton ('out', userData, onValidCard)}
                         className="pressed-effect"
                         style={{
                             backgroundImage: `linear-gradient(rgba(255,255,255,0.0), rgba(0,0,0,0.2)), url(${(breakState === 'processing' || pauseState === 'processing') ? pauseHolder : buttonBackgroundByCompany.salidaImg[config.empresa]})`,
@@ -219,7 +222,7 @@ const handlePressButton = (action) => {
                 <div style={{ display: 'flex', gap: 60 }}>
                     {/* Inicio Comida */}
                     <div
-                        onClick={() => handlePressButton('pause')}
+                        onClick={() => handlePressButton ('pause', userData, onValidCard)}
                         className="pressed-effect"
                         style={{
                             backgroundImage: `linear-gradient${pauseState !== 'processing' && breakState === 'disabled' ? '(rgba(0,0,0,0.5), rgba(0,0,0,0.5))' : '(rgba(255,255,255,0.0), rgba(0,0,0,0.2))'}, url(${breakState === 'processing' || pauseState === 'processing' ? pauseHolder : buttonBackgroundByCompany.inicioComidaImg[config.empresa]})`,
@@ -235,7 +238,6 @@ const handlePressButton = (action) => {
                             textAlign: 'center',
                             boxShadow: '0 4px 16px #0002'
                     }}>
-                        {userData.data.pause_time}
                         {breakState !== 'processing' && pauseState !== 'processing' && userData.data.pause_time !== '00:00:00' &&
                             <span style={{ color: '#fff', fontWeight: 700, fontSize: 30, opacity: '20%'}}>
                                 {userData.data.pause_time}
@@ -246,7 +248,7 @@ const handlePressButton = (action) => {
                     {/* Final Comida */}
                     <div
                         className="pressed-effect"
-                        onClick={() => handlePressButton('restart')}                        
+                        onClick={() => handlePressButton ('restart', userData, onValidCard)}                        
                         style={{
                             backgroundImage: `linear-gradient${pauseState !== 'processing' && breakState === 'disabled' ? '(rgba(0,0,0,0.5), rgba(0,0,0,0.5))' : '(rgba(255,255,255,0.0), rgba(0,0,0,0.2))'}, url(${pauseState === 'processing' ? pauseHolder : buttonBackgroundByCompany.finalComidaImg[config.empresa]})`,
                             backgroundRepeat: 'no-repeat',
@@ -261,7 +263,6 @@ const handlePressButton = (action) => {
                             textAlign: 'center',
                             boxShadow: '0 4px 16px #0002'
                     }}>
-                        {userData.data.restart_time}
                         {breakState !== 'processing' && pauseState !== 'processing' && userData.data.restart_time !== '00:00:00' &&
                             <span style={{ color: '#fff', fontWeight: 700, fontSize: 30, opacity: '20%'}}>
                                 {userData.data.restart_time}
@@ -271,8 +272,12 @@ const handlePressButton = (action) => {
                     </div>
                 </div>
             </div>
-            <div>Offlineusers {JSON.stringify(offlineUsers)}</div>
-            <div>Userdata {JSON.stringify(userData)}</div>            {/* BOTONES PEQUEÑOS ABAJO */}
+            
+            {/* <div>Offlineusers {JSON.stringify(offlineUsers)}</div>
+            <div>Userdata {JSON.stringify(userData)}</div>             */}
+            
+            {/* BOTONES PEQUEÑOS ABAJO */}
+            
             <div style={{
                 display: 'flex',
                 flexDirection: 'row',
@@ -283,7 +288,7 @@ const handlePressButton = (action) => {
             }}>
                 {/* Iniciar Pausa */}
                 {/* <div
-                    onClick={() => handlePressButton('pause_restart')}
+                    onClick={() => handlePressButton ('pause_restart')}
                     className="pressed-effect"
                     style={{
                         backgroundImage: `linear-gradient(rgba(255,255,255,0.0), rgba(0,0,0,0.2)), url(${ breakState === 'processing'? pauseHolder  : pauseState === 'available' ? pauseImg : restartImg})`,

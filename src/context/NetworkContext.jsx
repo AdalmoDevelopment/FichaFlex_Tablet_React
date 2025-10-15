@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { useOfflineStore } from "./OfflineStoreContext"; // 👈 aquí tienes los fichajes offline
 import axios from "axios";
 import config from "./ConfigEnv";
 

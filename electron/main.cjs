@@ -43,7 +43,7 @@ function createWindow() {
     mainWindow.show();
     mainWindow.focus();
     mainWindow.webContents.focus();
-    mainWindow.webContents.openDevTools()
+    // mainWindow.webContents.openDevTools()
   });
 }
 

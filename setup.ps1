@@ -54,9 +54,6 @@ Set-Location $projectDir
 Write-Host "Instalando dependencias..."
 npm install
 
-Write-Host "Reconstruyendo módulos nativos..."
-npm run rebuild
-
 # Matar procesos node.exe
 $nodeProcs = Get-Process -Name node -ErrorAction SilentlyContinue
 if ($nodeProcs) {
@@ -152,6 +149,7 @@ Write-Host "Tarea diaria '$taskName' programada para ejecutarse a las $hora cada
 
 # Ejecutar la app ahora
 Write-Host "Iniciando la app con 'npm run build' y luego 'npm run start'..."
+npm rebuild
 npm run build
 npm run start
 

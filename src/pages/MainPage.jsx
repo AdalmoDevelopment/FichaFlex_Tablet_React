@@ -75,6 +75,7 @@ const handleKeyDown = async (e) => {
 			const merged = {
 				...response.data.data,
 				...offlineData, // offline tiene prioridad
+				nfc_id: cardBuffer 
 			};
 
 			setUserData({ data: merged });
@@ -193,7 +194,7 @@ useEffect(() => {
 		color: config.textColorDatetime,
 		opacity: 0.8
 	  }}>
-		{fecha} <p style={{fontSize: 10}}>{JSON.stringify(window.sqlite.logsDB?.getPendingLogs())}</p>
+		{/* {fecha} <p style={{fontSize: 10}}>{JSON.stringify(window.sqlite.logsDB?.getPendingLogs())}</p> */}
 	  </div>
 	  {/* Hora top-right */}
 	  <div style={{

@@ -7,10 +7,10 @@ import { OfflineStoreProvider } from './context/OfflineStoreContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <NetworkProvider>
-      <OfflineStoreProvider>
+    <OfflineStoreProvider>
+      <NetworkProvider>      
         <App />
-      </OfflineStoreProvider>
-    </NetworkProvider>
+      </NetworkProvider>
+    </OfflineStoreProvider>
   </StrictMode>,
 )
