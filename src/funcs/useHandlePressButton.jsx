@@ -58,6 +58,8 @@ export const useHandlePressButton = () => {
             showCustomToast({ type: "warning", message: "¡Jornada intensiva!" })
         } else if (breakState === 'disabled' && ( action === 'pause' || action === 'restart' )){
             showCustomToast({ type: "warning", message: "Comida ya realizada" })
+        } else if ( action === 'restart' && userData.data.pause_time === '00:00:00' ){
+            showCustomToast({ type: "warning", message: "No se puede acabar una comida no iniciada" })
         } else {
             if (isOnline) {
                     if (action === 'in') {
