@@ -29,8 +29,8 @@ export const OfflineStoreProvider = ({ children }) => {
             out_time: '00:00:00',
             pause_time: '00:00:00',
             restart_time: '00:00:00',
-            pause: false,
-            restart: false,
+            pause: '00:00:00',
+            restart: '00:00:00',
           },
         };
       }); 

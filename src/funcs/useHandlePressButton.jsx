@@ -103,9 +103,11 @@ export const useHandlePressButton = () => {
                     } else if (action === 'pause_restart' ){
                         if (pauseState === 'available') {
                             userData.data.pause = curTime;
+                            updateUser(userData.data.nfc_id, { pause: curTime, restart: '00:00:00' });
                             handleRequest(action, 'Pausa iniciada')
                         } else {
                             userData.data.restart = curTime;
+                            updateUser(userData.data.nfc_id, { restart: curTime });
                             handleRequest(action, 'Pausa terminada')
                         }
                         
