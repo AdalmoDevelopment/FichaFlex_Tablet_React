@@ -40,7 +40,8 @@ useEffect(() => {
             restart: log.restart,
             pauseState: log.pauseState,
             action: log.action,
-            delegacion: config.delegacion
+            delegacion: config.delegacion,
+            fechaTarget: log.fecha
           });
           window.sqlite.logsDB?.markAsSynced([log.id]);
           console.log("☁️ Log sincronizado con servidor:", log.id);

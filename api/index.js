@@ -147,12 +147,13 @@ app.post('/api/validate', async (req, res) => {
 
 app.put('/api/update-fichaje', async (req, res) => {
   const { nfc_id, nombre, in_time, out_time, pause_time, restart_time, pause, restart, pauseState, action, delegacion } = req.body;
+  let { fechaTarget } = req.body;
   console.log('Datos:', req.body)
 
   const conn = await db.getConnection();
   await conn.beginTransaction();
 
-  let fechaTarget = 'CURDATE()';
+  fechaTarget = !fechaTarget ? 'CURDATE()' : `'${fechaTarget}'`;
 
   if (action === 'out' && in_time && out_time < '08:00:00') {
     fechaTarget = 'DATE_SUB(CURDATE(), INTERVAL 1 DAY)';
