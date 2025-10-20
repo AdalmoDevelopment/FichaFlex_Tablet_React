@@ -123,7 +123,8 @@ const FichajesPage = ({ onValidCard, userData}) => {
 
     const isStartOfWorkday = userData.data.in_time !== '00:00:00' 
     const breakState = 
-        userData.data.intensivo === 'si' || userData.data.dia_fichaje === 'sábado' || userData.data.dia_fichaje === 'domingo' ? 
+        // userData.data.intensivo === 'si' || 
+        userData.data.dia_fichaje === 'sábado' || userData.data.dia_fichaje === 'domingo' ? 
         'disabled' :
         userData.data.pause_time === '00:00:00' && userData.data.restart_time === '00:00:00' ?
         'available' :

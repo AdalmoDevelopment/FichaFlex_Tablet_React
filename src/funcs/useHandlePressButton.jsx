@@ -54,9 +54,11 @@ export const useHandlePressButton = () => {
             showCustomToast({ type: "warning", message: "Termina la pausa antes de seguir" })
         } else if (breakState === 'processing' && action !== 'restart'){
             showCustomToast({ type: "warning", message: "Termina la comida antes de seguir" })
-        } else if (breakState === 'disabled' && userData.data.intensivo === 'si' && ( action === 'pause' || action === 'restart' )){
-            showCustomToast({ type: "warning", message: "¡Jornada intensiva!" })
-        } else if (breakState === 'disabled' && ( action === 'pause' || action === 'restart' )){
+        }
+        //  else if (breakState === 'disabled' && userData.data.intensivo === 'si' && ( action === 'pause' || action === 'restart' )){
+        //     showCustomToast({ type: "warning", message: "¡Jornada intensiva!" })
+        // }
+         else if (breakState === 'disabled' && ( action === 'pause' || action === 'restart' )){
             showCustomToast({ type: "warning", message: "Comida ya realizada" })
         } else if ( action === 'restart' && userData.data.pause_time === '00:00:00' ){
             showCustomToast({ type: "warning", message: "No se puede acabar una comida no iniciada" })
