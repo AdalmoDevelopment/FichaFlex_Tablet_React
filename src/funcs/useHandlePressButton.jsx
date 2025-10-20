@@ -146,9 +146,9 @@ export const useHandlePressButton = () => {
                         value: curTime,
                         });
                     }
-                    showCustomToast({ type: "success", message: "Acción guardada offline" });
-                    } catch (err) {
-                    console.error("❌ Error guardando log offline:", err);
+                    console.log("✅ Log offline guardado correctamente, acción:", action, 'datos:' + userData);
+                } catch (err) {
+                    console.error("⚠️ Error guardando log offline:", err);
                     showCustomToast({ type: "error", message: "Error guardando log offline" });
                     } finally {
                     onValidCard(false);
