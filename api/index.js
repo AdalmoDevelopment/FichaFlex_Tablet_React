@@ -27,7 +27,7 @@ const db = mysql.createPool({
 setInterval(async () => {
   try {
     await db.query('SELECT 1'); // keep-alive
-    console.log(`[${new Date().toISOString()}] Keep-alive enviado`);
+    // console.log(`[${new Date().toISOString()}] Keep-alive enviado`);
 
     const delegacion = process.env.VITE_DELEGACION_GLOBAL;
 

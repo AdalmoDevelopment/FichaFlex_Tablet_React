@@ -137,12 +137,25 @@ export const useHandlePressButton = () => {
                     }
                 } 
 
+                const saveOffline = async () => {
+                    try {
                     if (action !== "pause_restart") {
-                        window.sqlite.logsDB?.saveOfflineLog({
+                        await window.sqlite?.logsDB?.saveOfflineLog({
                         data: userData.data,
                         field: `${action}_time`,
-                        value: curTime
-                    });
+                        value: curTime,
+                        });
+                    }
+                    showCustomToast({ type: "success", message: "Acción guardada offline" });
+                    } catch (err) {
+                    console.error("❌ Error guardando log offline:", err);
+                    showCustomToast({ type: "error", message: "Error guardando log offline" });
+                    } finally {
+                    onValidCard(false);
+                    }
+                };
+
+                saveOffline(); // 🔹 Llamamos sin await (no hace falta)
                 }
             }
             
