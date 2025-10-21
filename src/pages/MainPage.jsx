@@ -56,7 +56,6 @@ const MainPage = ({ onValidCard, setUserData }) => {
 
 const handleKeyDown = async (e) => {
   setLoading(true);
-  console.log("A ver si llega");
 
   if (e.key === "Enter") {
     if (cardBuffer.length >= 7) {
@@ -90,7 +89,7 @@ const handleKeyDown = async (e) => {
           }
         } catch (err) {
           console.error("Error al validar tarjeta:", err);
-          showCustomToast({ type: "error", message: `Error conectando con la base de datos: ${err}` });
+          showCustomToast({ type: "error", message: `Error conectando. Inténtalo de nuevo.` });
         } finally {
           setCardBuffer(""); // Limpia después de cada intento
         }
