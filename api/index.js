@@ -153,11 +153,17 @@ app.put('/api/update-fichaje', async (req, res) => {
   const conn = await db.getConnection();
   await conn.beginTransaction();
 
-  fechaTarget = !fechaTarget ? 'CURDATE()' : `'${fechaTarget}'`;
+let fechaTargetSQL;
 
   if (action === 'out' && in_time && out_time < '08:00:00') {
-    fechaTarget = 'DATE_SUB(CURDATE(), INTERVAL 1 DAY)';
+    console.log("🕒 Fichaje nocturno detectado, aplicando fecha del día anterior");
+    fechaTargetSQL = 'DATE_SUB(CURDATE(), INTERVAL 1 DAY)';
+  } else if (fechaTarget) {
+    fechaTargetSQL = `'${fechaTarget}'`;
+  } else {
+    fechaTargetSQL = 'CURDATE()';
   }
+
   const query = `
     UPDATE registros_new 
     JOIN users ON registros_new.id_user = users.id
@@ -167,7 +173,7 @@ app.put('/api/update-fichaje', async (req, res) => {
       pause_time = CASE WHEN ? <> '00:00:00' THEN ? ELSE pause_time END,
       restart_time = CASE WHEN ? <> '00:00:00' THEN ? ELSE restart_time END,
       delegacion_fichaje = CASE WHEN ? IS NOT NULL THEN ? ELSE delegacion_fichaje END
-    WHERE users.nfc_id = ? AND fecha = ${fechaTarget}
+    WHERE users.nfc_id = ? AND fecha = ${fechaTargetSQL}
   `;
   console.log('la query es: ' + query)
   try {

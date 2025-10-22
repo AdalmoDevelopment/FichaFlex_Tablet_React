@@ -72,7 +72,7 @@ export const useHandlePressButton = () => {
                         const currentMonth = new Date().getMonth(); // 0 = enero, 7 = agosto
 
                         if (currentMonth !== 7 && userData.data.intensivo === 'no'){
-                            if (userData.data.total_break <= '00:00:00') {
+                            if (userData.data.pause_time === '00:00:00' && userData.data.restart_time === '00:00:00') {
                                 showCustomToast({ type: "error", message: `
                                     FICHAJE ERRONEO, faltan los fichajes de la comida.
                                     Cuando ello suceda de manera reiterada, nos veremos obligados

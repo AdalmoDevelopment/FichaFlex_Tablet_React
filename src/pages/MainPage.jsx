@@ -82,16 +82,14 @@ const handleKeyDown = async (e) => {
 			// opcional: actualizar también el store para mantenerlo fresco
 			updateUser(cardBuffer, merged);
 
-			console.log("✅ Tarjeta válida:", merged);
+			console.log(`✅ Tarjeta válida ${cardBuffer}:`, merged);
           } else {
-            console.log("❌ Tarjeta no válida");
-            showCustomToast({ type: "error", message: "Tarjeta no válida" });
+            console.log("❌ Tarjeta no encontrada en el servidor:", cardBuffer);
+            showCustomToast({ type: "error", message: "Tarjeta no encontrada en el servidor" });
           }
         } catch (err) {
-          console.error("Error al validar tarjeta:", err);
+          console.error(`Error al validar tarjeta ${cardBuffer}:`, err);
           showCustomToast({ type: "error", message: `Error conectando. Inténtalo de nuevo.` });
-        } finally {
-          setCardBuffer(""); // Limpia después de cada intento
         }
       } else {
         // 🔹 flujo offline → placeholder
@@ -129,8 +127,10 @@ const handleKeyDown = async (e) => {
 		}
 
         showCustomToast({ type: "success", message: "Tarjeta validada (modo offline)" });
-        setCardBuffer("");
+
       }
+	  
+	  setCardBuffer(""); // Limpia después de cada intento 
     }
   } else {
     // Solo acumula si es un carácter imprimible
@@ -140,7 +140,7 @@ const handleKeyDown = async (e) => {
   }
 
   setLoading(false);
-};
+}; 
 
 
 useEffect(() => {
