@@ -7,7 +7,7 @@
     "dev": "concurrently \"npm run start-api\" \"vite\" \"wait-on http://localhost:5173 && electron --no-sandbox .\"",
     "start-api": "nodemon api/index.js",
     "build": "vite build",
-    "rebuild": "electron-rebuild -f -w better-sqlite3",
+    "rebuild": "electron-rebuild -f -w better-sqlite3 --version 36.9.4",
     "lint": "eslint .",
     "preview": "vite preview",
     "package": "electron-builder",
