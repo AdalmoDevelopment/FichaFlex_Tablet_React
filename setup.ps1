@@ -149,7 +149,7 @@ Write-Host "Tarea diaria '$taskName' programada para ejecutarse a las $hora cada
 
 # Ejecutar la app ahora
 Write-Host "Iniciando la app con 'npm run build' y luego 'npm run start'..."
-npm rebuild
+npm run rebuild
 npm run build
 npm run start
 
