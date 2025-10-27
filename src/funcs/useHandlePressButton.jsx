@@ -69,28 +69,28 @@ export const useHandlePressButton = () => {
                         updateUser(userData.data.nfc_id, { in_time: curTime }); // Para el store local
                         handleRequest(action, 'Jornada iniciada')
                     } else if (action === 'out') {
-                        const currentMonth = new Date().getMonth(); // 0 = enero, 7 = agosto
+                        // const currentMonth = new Date().getMonth(); // 0 = enero, 7 = agosto
 
-                        if (currentMonth !== 7 && userData.data.intensivo === 'no'){
-                            if (userData.data.pause_time === '00:00:00' && userData.data.restart_time === '00:00:00' && userData.data.in_time !== '00:00:00') {
-                                showCustomToast({ type: "error", message: `
-                                    FICHAJE ERRONEO, faltan los fichajes de la comida.
-                                    Cuando ello suceda de manera reiterada, nos veremos obligados
-                                    a enviar avisos nominales por escrito de cara a poder justificar
-                                    nuestro intento de cumplimiento
-                                    de la ley ante cualquier inspección laboral.
-                                `, duration: 10000, height: '500px', width: '1000px'})
-                                // playSound()
-                            } else if (userData.data.total_break <= '00:20:00') {
-                                showCustomToast({ type: "error", message: `
-                                    FICHAJE ERRONEO, descanso de comida mínimo de 30’
-                                    Cuando ello suceda de manera reiterada, nos veremos obligados a
-                                    enviar avisos nominales por escrito de cara a poder justificar
-                                    nuestro intento de cumplimiento de la ley ante cualquier inspección.
-                                `, duration: 10000, height: '500px', width: '1000px'})
-                                // playSound()
-                            }
-                        }
+                        // if (currentMonth !== 7 && userData.data.intensivo === 'no'){
+                        //     if (userData.data.pause_time === '00:00:00' && userData.data.restart_time === '00:00:00' && userData.data.in_time !== '00:00:00') {
+                        //         showCustomToast({ type: "error", message: `
+                        //             FICHAJE ERRONEO, faltan los fichajes de la comida.
+                        //             Cuando ello suceda de manera reiterada, nos veremos obligados
+                        //             a enviar avisos nominales por escrito de cara a poder justificar
+                        //             nuestro intento de cumplimiento
+                        //             de la ley ante cualquier inspección laboral.
+                        //         `, duration: 10000, height: '500px', width: '1000px'})
+                        //         // playSound()
+                        //     } else if (userData.data.total_break <= '00:20:00') {
+                        //         showCustomToast({ type: "error", message: `
+                        //             FICHAJE ERRONEO, descanso de comida mínimo de 30’
+                        //             Cuando ello suceda de manera reiterada, nos veremos obligados a
+                        //             enviar avisos nominales por escrito de cara a poder justificar
+                        //             nuestro intento de cumplimiento de la ley ante cualquier inspección.
+                        //         `, duration: 10000, height: '500px', width: '1000px'})
+                        //         // playSound()
+                        //     }
+                        // }
                         userData.data.out_time = curTime;
                         updateUser(userData.data.nfc_id, { out_time: curTime }); // Para el store local
                         handleRequest(action, 'Jornada finalizada')
