@@ -19,6 +19,7 @@ const MainPage = ({ onValidCard, setUserData }) => {
   const inputRef = useRef(null);
   const [cardBuffer, setCardBuffer] = useState("");
   const [loading, setLoading] = useState(false);
+  const [tries, setTries] = useState(0);
 
   const config = {
 	empresa: import.meta.env.VITE_EMPRESA_GLOBAL  || window.env?.VITE_EMPRESA_GLOBAL || 'DEFAULT',
@@ -71,9 +72,18 @@ const handleKeyDown = async (e) => {
 
 			// 🔹 Mezclar datos de DB con offline
 			const offlineData = offlineUsers[cardBuffer] || {};
+
+			const allowMergeFields = ["in_time", "out_time", "pause_time", "restart_time"];
+
+			const filteredOffline = Object.fromEntries(
+				Object.entries(offlineUsers[cardBuffer] || {}).filter(([key, value]) =>
+					allowMergeFields.includes(key) && value && value !== "00:00:00"
+				)
+			);
+
 			const merged = {
 				...response.data.data,
-				...offlineData, // offline tiene prioridad
+				...filteredOffline, // offline tiene prioridad
 				nfc_id: cardBuffer 
 			};
 
@@ -82,14 +92,22 @@ const handleKeyDown = async (e) => {
 			// opcional: actualizar también el store para mantenerlo fresco
 			updateUser(cardBuffer, merged);
 
-			console.log(`✅ Tarjeta válida ${cardBuffer}:`, merged);
+			console.log(`${Date()} ✅ Tarjeta válida ${cardBuffer}:`, merged);
+
+			setTries(0);
           } else {
             console.log("❌ Tarjeta no encontrada en el servidor:", cardBuffer);
             showCustomToast({ type: "error", message: "Tarjeta no encontrada en el servidor" });
           }
         } catch (err) {
           console.error(`Error al validar tarjeta ${cardBuffer}:`, err);
-          showCustomToast({ type: "error", message: `Error conectando. Inténtalo de nuevo.` });
+
+		  setTries(tries + 1);
+
+		  if (tries >= 3) {
+			showCustomToast({ type: "warning", message: `Error conectando. Inténtalo de nuevo.` });
+			setTries(0);
+		  }
         }
       } else {
         // 🔹 flujo offline → placeholder
@@ -219,7 +237,9 @@ useEffect(() => {
 		alt="Logo"
 		style={{ width: '70%', height: 'auto' }}
 		/>
+		
 	  </div>
+	  {/* <div>{JSON.stringify(offlineUsers)}</div> */}
 	  {/* Esquina inferior derecha */}
 	  <div style={{
 		position: 'absolute',

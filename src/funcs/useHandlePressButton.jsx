@@ -60,7 +60,7 @@ export const useHandlePressButton = () => {
         // }
          else if (breakState === 'disabled' && ( action === 'pause' || action === 'restart' )){
             showCustomToast({ type: "warning", message: "Comida ya realizada" })
-        } else if ( action === 'restart' && userData.data.pause_time === '00:00:00' ){
+        } else if ( action === 'restart' && userData.data.pause_time === '00:00:00' && isOnline){
             showCustomToast({ type: "warning", message: "No se puede acabar una comida no iniciada" })
         } else {
             if (isOnline) {

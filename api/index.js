@@ -135,7 +135,7 @@ app.post('/api/validate', async (req, res) => {
       console.log('nop')
       return res.status(404).json({ valid: false, message: 'Tarjeta no válida' });
     }
-    console.log(rows[0])
+    console.log("Esto sera userData: ", rows[0])
 
     return res.json({ valid: true, data: rows[0] });
   } catch (error) {
