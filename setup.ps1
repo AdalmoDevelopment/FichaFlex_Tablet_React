@@ -40,11 +40,16 @@ if (-not (Test-Path $projectDir)) {
     git clone $gitRepoUrl $projectDir
 } else {
     Write-Host "Carpeta existe. Actualizando repo..."
-    Set-Location $projectDir
-    git add *
-    git stash
-    git clean -fd
-    git pull
+    Set-Location $projectDir 
+
+    git reset --hard
+    
+    git checkout main 
+    
+    git fetch origin
+    
+    git reset --hard origin/main 
+
 }
 
 # Ir al proyecto
