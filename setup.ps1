@@ -40,11 +40,16 @@ if (-not (Test-Path $projectDir)) {
     git clone $gitRepoUrl $projectDir
 } else {
     Write-Host "Carpeta existe. Actualizando repo..."
-    Set-Location $projectDir
-    git add *
-    git stash
-    git clean -fd
-    git pull
+    Set-Location $projectDir 
+
+    git reset --hard
+    
+    git checkout main 
+    
+    git fetch origin
+    
+    git reset --hard origin/main 
+
 }
 
 # Ir al proyecto
@@ -148,8 +153,8 @@ schtasks /Create /F /SC DAILY /TN $taskName /TR "powershell -ExecutionPolicy Byp
 Write-Host "Tarea diaria '$taskName' programada para ejecutarse a las $hora cada día."
 
 # Ejecutar la app ahora
-Write-Host "Iniciando la app con 'npm run re/build' y luego 'npm run start'..."
-npm rebuild
+Write-Host "Iniciando la app con 'npm run build' y luego 'npm run start'..."
+npm run rebuild
 npm run build
 npm run start
 

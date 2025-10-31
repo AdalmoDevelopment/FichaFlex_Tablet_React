@@ -27,7 +27,7 @@ const db = mysql.createPool({
 setInterval(async () => {
   try {
     await db.query('SELECT 1'); // keep-alive
-    console.log(`[${new Date().toISOString()}] Keep-alive enviado`);
+    // console.log(`[${new Date().toISOString()}] Keep-alive enviado`);
 
     const delegacion = process.env.VITE_DELEGACION_GLOBAL;
 
@@ -89,21 +89,21 @@ app.post('/api/validate', async (req, res) => {
   }
   try {
     const [rows] = await db.query(`
-     SELECT 
-          u.nombre,
-          u.chofer,
-          rn.in_time,
-          rn.pause_time,
-          rn.restart_time,
-          rn.out_time,
-          p.pause,
-          p.restart,
-          TIMEDIFF(rn.restart_time, rn.pause_time) AS total_break,
-          IFNULL(rv.inicio, '00:00:00') AS inicio_viaje,
-          IFNULL(rv.fin, '00:00:00') AS fin_viaje,
-          rv.vehiculos_matricula AS last_vehicle,
-          rn.intensivo,
-          rn.dia_fichaje
+      SELECT 
+        u.nombre,
+        u.chofer,
+        rn.in_time,
+        rn.pause_time,
+        rn.restart_time,
+        rn.out_time,
+        p.pause,
+        p.restart,
+        timediff(rn.restart_time, rn.pause_time) as total_break,
+        ifnull(rv.inicio, '00:00:00') as inicio_viaje,
+        ifnull(rv.fin, '00:00:00') as fin_viaje,
+        rv.vehiculos_matricula as last_vehicle,
+        rn.intensivo,
+        rn.dia_fichaje
       FROM users u
       LEFT JOIN registros_new rn 
           ON u.nombre = rn.usuario
@@ -135,7 +135,7 @@ app.post('/api/validate', async (req, res) => {
       console.log('nop')
       return res.status(404).json({ valid: false, message: 'Tarjeta no válida' });
     }
-    console.log(rows[0])
+    console.log("Esto sera userData: ", rows[0])
 
     return res.json({ valid: true, data: rows[0] });
   } catch (error) {
@@ -146,25 +146,45 @@ app.post('/api/validate', async (req, res) => {
 });
 
 app.put('/api/update-fichaje', async (req, res) => {
-  const { nombre, in_time, out_time, pause_time, restart_time, pause, restart, pauseState, action, delegacion } = req.body;
-  console.log(req.body)
+  const { nfc_id, nombre, in_time, out_time, pause_time, restart_time, pause, restart, pauseState, action, delegacion } = req.body;
+  let { fechaTarget } = req.body;
+  console.log('Datos:', req.body)
+
   const conn = await db.getConnection();
   await conn.beginTransaction();
 
-  let fechaTarget = 'CURDATE()';
+let fechaTargetSQL;
 
   if (action === 'out' && in_time && out_time < '08:00:00') {
-    fechaTarget = 'DATE_SUB(CURDATE(), INTERVAL 1 DAY)';
+    console.log("🕒 Fichaje nocturno detectado, aplicando fecha del día anterior");
+    fechaTargetSQL = 'DATE_SUB(CURDATE(), INTERVAL 1 DAY)';
+  } else if (fechaTarget) {
+    fechaTargetSQL = `'${fechaTarget}'`;
+  } else {
+    fechaTargetSQL = 'CURDATE()';
   }
 
   const query = `
-    UPDATE registros_new
-    SET in_time = ?, out_time = ?, pause_time = ?, restart_time = ?, delegacion_fichaje = ?
-    WHERE usuario = ? AND fecha = ${fechaTarget}
+    UPDATE registros_new 
+    JOIN users ON registros_new.id_user = users.id
+    SET 
+      in_time = CASE WHEN ? <> '00:00:00' THEN ? ELSE in_time END,
+      out_time = CASE WHEN ? <> '00:00:00' THEN ? ELSE out_time END,
+      pause_time = CASE WHEN ? <> '00:00:00' THEN ? ELSE pause_time END,
+      restart_time = CASE WHEN ? <> '00:00:00' THEN ? ELSE restart_time END,
+      delegacion_fichaje = CASE WHEN ? IS NOT NULL THEN ? ELSE delegacion_fichaje END
+    WHERE users.nfc_id = ? AND fecha = ${fechaTargetSQL}
   `;
   console.log('la query es: ' + query)
   try {
-    await conn.query(query, [in_time, out_time, pause_time, restart_time, delegacion, nombre]);
+    await conn.query(query, [
+      in_time, in_time,             // para el primer CASE
+      out_time, out_time,           // segundo CASE
+      pause_time, pause_time,       // tercero
+      restart_time, restart_time,   // cuarto
+      delegacion, delegacion,       // quinto
+      nfc_id                        // WHERE usuario = ?
+    ]);
 
     if (action === 'pause_restart' ) {
       if (pauseState === 'available') {
@@ -182,7 +202,6 @@ app.put('/api/update-fichaje', async (req, res) => {
           WHERE rn.usuario = ? AND rn.fecha = CURDATE()
           ORDER BY p.id DESC LIMIT 1
         `, [nombre]);
-
         if (rows.length > 0) {
           await conn.query(`
             UPDATE pausas SET restart = ? WHERE id = ?
@@ -196,9 +215,18 @@ app.put('/api/update-fichaje', async (req, res) => {
 
   } catch (err) {
     await conn.rollback();
-    console.error("Error actualizando fichaje:", err);
-    res.status(500).json({ error: "Error en la base de datos" });
-  } finally {
+
+    console.error("❌ ERROR actualizando fichaje:");
+    console.error("Mensaje:", err.message);
+    console.error("Código:", err.code);
+    console.error("Stack:", err.stack);
+    console.error("Datos recibidos:", JSON.stringify(req.body, null, 2));
+
+    res.status(500).json({ 
+      error: "Error en la base de datos", 
+      details: err.message 
+    });
+  }  finally {
     conn.release();
   }
 });

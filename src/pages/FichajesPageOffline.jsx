@@ -1,5 +1,5 @@
-import { use, useEffect, useState } from "react";
-import axios from "axios";
+// src/pages/FichajesPageOffline.jsx
+import { useEffect, useState } from "react";
 import entradaImgAdalmo from '../assets/adalmo_ul.png';
 import salidaImgAdalmo  from '../assets/adalmo_ur.png';
 import inicioComidaImgAdalmo  from '../assets/adalmo_dl.png';
@@ -20,73 +20,85 @@ import restartImg from '../assets/screen_reinicio_jornada.png';
 import salirImg from '../assets/screen_salir.png';
 import pauseHolder from '../assets/pause_holder.png';
 import { showCustomToast } from "../components/CustomToast";
-import version from '../../package.json';
-import soundalert from '../assets/audio/soundalert.wav'
-import { processVehicleTrip } from "../funcs/DriverFuncs";
-import VehicleModal from "../components/VehicleModal";
+import soundalert from '../assets/audio/soundalert.wav';
 import Icon from '@mdi/react';
-import { mdiTruckCheck, mdiTruckFast  } from '@mdi/js';
+import { mdiTruckCheck, mdiTruckFast } from '@mdi/js';
 import { useOfflineStore } from "../context/OfflineStoreContext";
 import config from "../context/ConfigEnv";
 import { useHandlePressButton } from "../funcs/useHandlePressButton";
 
-const FichajesPage = ({ onValidCard, userData}) => {
+const FichajesPageOffline = ({ onValidCard, userData }) => {
 
-    const { addUserIfNotExists, updateUser, offlineUsers } = useOfflineStore();
+  const { addUserIfNotExists, updateUser, offlineUsers } = useOfflineStore();
 
-      const handlePressButton  = useHandlePressButton();
+  const handlePressButton  = useHandlePressButton();
 
-    {`
-        Hay 4 condiciones en los fichajes:
-        isStartOfWorkday: true/false, si se ficha es true no se puede fichar entrada otra vez.
-        breakState: "available"(se puede fichar comida) | "processing"(obliga a acabarla) | "disabled"(ya no deja hacerla pues ya está hecha), 
-        pauseState: "available"(se puede empezar pausa) | "processing"(obliga a acabarla) ,
-    `}
+  const buttonBackgroundByCompany = {
+    entradaImg : { adalmo: entradaImgAdalmo, ferrimet: entradaImgFerrimet, dra: entradaImgDRA },
+    salidaImg : { adalmo: salidaImgAdalmo, ferrimet: salidaImgFerrimet, dra: salidaImgDRA },
+    inicioComidaImg : { adalmo: inicioComidaImgAdalmo, ferrimet: inicioComidaImgFerrimet, dra: inicioComidaImgDRA },
+    finalComidaImg : { adalmo: finalComidaImgAdalmo, ferrimet: finalComidaImgFerrimet, dra: finalComidaImgDRA }
+  };
 
-    const buttonBackgroundByCompany = {
-        entradaImg : {
-            adalmo: entradaImgAdalmo,
-            ferrimet: entradaImgFerrimet,
-            dra: entradaImgDRA
-        },
-        salidaImg : {
-            adalmo: salidaImgAdalmo,
-            ferrimet: salidaImgFerrimet,
-            dra: salidaImgDRA
-        },
-        inicioComidaImg : {
-            adalmo: inicioComidaImgAdalmo,
-            ferrimet: inicioComidaImgFerrimet,
-            dra: inicioComidaImgDRA
-        },
-        finalComidaImg : {
-            adalmo: finalComidaImgAdalmo,
-            ferrimet: finalComidaImgFerrimet,
-            dra: finalComidaImgDRA
-        }
-    };
+//   const playSound = () => new Audio(soundalert).play();
 
-    const [modalOpen, setModalOpen] = useState(false);
-    const [vehicleList, setVehicleList] = useState([]);
+  const isStartOfWorkday = userData.data.in_time !== '00:00:00';
+  const breakState =
+    userData.data.intensivo === 'si' || ["sábado", "domingo"].includes(userData.data.dia_fichaje)
+      ? 'disabled'
+      : userData.data.pause_time === '00:00:00' && userData.data.restart_time === '00:00:00'
+        ? 'available'
+        : userData.data.pause_time !== '00:00:00' && userData.data.restart_time === '00:00:00'
+          ? 'processing'
+          : 'disabled';
+  const pauseState =
+    userData.data.pause !== '00:00:00' && userData.data.restart === '00:00:00'
+      ? 'processing'
+      : 'available';
 
-    useEffect(() => {
-        const fetchVehicleInfo = async () => {
-            try {
-            const response = await axios.post(`http://${config.url}:3000/vehiculos`);
-            const vehicles = response.data
-            .map(vehicle => ({
-                label: vehicle.matricula,
-                value: vehicle.matricula,
-            }));
-            setVehicleList(vehicles);
-            // showCustomToast ({ type: "success", message: "Vehículos cargados correctamente" + JSON.stringify(vehicles) });
-            } catch (error) {
-                console.log(`http://${config.url}:3000/vehiculos`)
-            console.error('Error fetching vehicle options:', error);
-            }
-        };
-        fetchVehicleInfo();
-    },[]);
+// const handlePressButton  = (action) => {
+//   const curTime = new Date().toLocaleTimeString("es-ES", {
+//     hour: "2-digit",
+//     minute: "2-digit",
+//     second: "2-digit",
+//   });
+
+//   // Aseguramos que este user exista en el store
+//   addUserIfNotExists(userData.data.nfc_id);
+ 
+//   if (action === "in") {
+//     updateUser(userData.data.nfc_id, { in_time: curTime });
+//     showCustomToast({ type: "success", message: "Jornada iniciada" });
+//   } else if (action === "out") {
+//     updateUser(userData.data.nfc_id, { out_time: curTime });
+//     showCustomToast({ type: "success", message: "Jornada finalizada" });
+//   } else if (action === "pause") {
+//     updateUser(userData.data.nfc_id, { pause_time: curTime });
+//     showCustomToast({ type: "success", message: "Comida iniciada" });
+//   } else if (action === "restart") {
+//     updateUser(userData.data.nfc_id, { restart_time: curTime });
+//     showCustomToast({ type: "success", message: "Comida finalizada" });
+//   } else if (action === "pause_restart") {
+//     if (pauseState === "available") {
+//       updateUser(userData.data.nfc_id, { pause: curTime });
+//       showCustomToast({ type: "success", message: "Pausa iniciada" });
+//     } else {
+//       updateUser(userData.data.nfc_id, { restart: curTime });
+//       showCustomToast({ type: "success", message: "Pausa terminada" });
+//     }
+//   }
+//     if (action !== "pause_restart") {
+//         window.sqlite.logsDB?.saveOfflineLog({
+//         data: userData.data,
+//         field: `${action}_time`,
+//         value: curTime
+//         });
+//     }
+
+
+//   onValidCard(false);
+// };
+
 
     const useRealTimePause = (horaInicio) => {
         const [pausa, setPausa] = useState("00:00:00");
@@ -113,119 +125,9 @@ const FichajesPage = ({ onValidCard, userData}) => {
         }, [horaInicio]);
 
         return pausa;
-    };
-    
-    const playSound = () => {
-        const audio = new Audio(soundalert); // Ruta relativa desde /public
-        audio.play();
-    };
+    }; 
 
-
-    const isStartOfWorkday = userData.data.in_time !== '00:00:00' 
-    const breakState = 
-        // userData.data.intensivo === 'si' || 
-        userData.data.dia_fichaje === 'sábado' || userData.data.dia_fichaje === 'domingo' ? 
-        'disabled' :
-        userData.data.pause_time === '00:00:00' && userData.data.restart_time === '00:00:00' ?
-        'available' :
-        userData.data.pause_time !== '00:00:00' && userData.data.restart_time === '00:00:00' ?
-        'processing' :
-        'disabled';
-    const pauseState =
-        userData.data.pause !== '00:00:00' && userData.data.restart === '00:00:00' ?
-        'processing' :
-        'available'
-    const tripState =
-        userData.data.chofer !== 'yes' ? '' :
-        userData.data.inicio_viaje !== '00:00:00' && userData.data.fin_viaje === '00:00:00' ?
-        'processing' :
-        'available'
-    
-    // const handlePressButton = (action) => {
-    //     addUserIfNotExists(userData.data.nfc_id)
-
-    //     if (isStartOfWorkday && action === 'in' && pauseState !== 'processing'){
-    //         showCustomToast({ type: "warning", message: "Ya has empezado la jornada" })
-    //     } else if (pauseState === 'processing' && action !== 'pause_restart'){
-    //         showCustomToast({ type: "warning", message: "Termina la pausa antes de seguir" })
-    //     } else if (breakState === 'processing' && action !== 'restart'){
-    //         showCustomToast({ type: "warning", message: "Termina la comida antes de seguir" })
-    //     } else if (breakState === 'disabled' && userData.data.intensivo === 'si' && ( action === 'pause' || action === 'restart' )){
-    //         showCustomToast({ type: "warning", message: "¡Jornada intensiva!" })
-    //     } else if (breakState === 'disabled' && ( action === 'pause' || action === 'restart' )){
-    //         showCustomToast({ type: "warning", message: "Comida ya realizada" })
-    //     } 
-    //     else {
-    //         const handleRequest = async (action, message) => {
-    //             try {
-    //                 await axios.put(`http://${config.url}:3000/api/update-fichaje`, {
-    //                 ...userData.data,
-    //                 pauseState,
-    //                 action,
-    //                 delegacion : config.delegacion
-    //                 });
-    //                 showCustomToast({ type: "success", message: message })
-    //             } catch (err) {
-    //                 console.error("Error en la petición:", err);
-    //                 showCustomToast({ type: "error", message: " Ha habido un error" })
-    //             }
-    //         };
-
-    //         const curTime = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false, second: '2-digit' });
-
-    //         if (action === 'in') {
-    //             userData.data.in_time = curTime;
-    //             updateUser(userData.data.nfc_id, { in_time: curTime }); // Para el store local
-    //             handleRequest(action, 'Jornada iniciada')
-    //         } else if (action === 'out') {
-    //             const currentMonth = new Date().getMonth(); // 0 = enero, 7 = agosto
-
-    //             if (currentMonth !== 7 && userData.data.intensivo === 'no'){
-    //                 if (userData.data.total_break <= '00:00:00') {
-    //                     showCustomToast({ type: "error", message: `
-    //                         FICHAJE ERRONEO, faltan los fichajes de la comida.
-    //                         Cuando ello suceda de manera reiterada, nos veremos obligados
-    //                         a enviar avisos nominales por escrito de cara a poder justificar
-    //                         nuestro intento de cumplimiento
-    //                         de la ley ante cualquier inspección laboral.
-    //                     `, duration: 10000, height: '500px', width: '1000px'})
-    //                     // playSound()
-    //                 } else if (userData.data.total_break <= '00:20:00') {
-    //                     showCustomToast({ type: "error", message: `
-    //                         FICHAJE ERRONEO, descanso de comida mínimo de 30’
-    //                         Cuando ello suceda de manera reiterada, nos veremos obligados a
-    //                         enviar avisos nominales por escrito de cara a poder justificar
-    //                         nuestro intento de cumplimiento de la ley ante cualquier inspección.
-    //                     `, duration: 10000, height: '500px', width: '1000px'})
-    //                     // playSound()
-    //                 }
-    //             }
-    //             userData.data.out_time = curTime;
-    //             updateUser(userData.data.nfc_id, { out_time: curTime }); // Para el store local
-    //             handleRequest(action, 'Jornada finalizada')
-    //         } else if (action === 'pause') {
-    //             userData.data.pause_time = curTime;
-    //             updateUser(userData.data.nfc_id, { pause_time: curTime }); // Para el store local
-    //             handleRequest(action, 'Comida iniciada')
-    //         } else if (action === 'restart') {
-    //             userData.data.restart_time = curTime;
-    //             updateUser(userData.data.nfc_id, { restart_time: curTime }); // Para el store local
-    //             handleRequest(action, 'Comida finalizada')
-    //         } else if (action === 'pause_restart' ){
-    //             if (pauseState === 'available') {
-    //                 userData.data.pause = curTime;
-    //                 handleRequest(action, 'Pausa iniciada')
-    //             } else {
-    //                 userData.data.restart = curTime;
-    //                 handleRequest(action, 'Pausa terminada')
-    //             }
-                
-    //         }
-    //         onValidCard(false)
-    //     }
-    // }
-
-    return (
+  return (
         <div style={{
             background: `linear-gradient(rgba(255,255,255,0.0), rgba(0,0,0,0.1)), ${config.backgroundColorOptions}`,
             minHeight: '100vh',
@@ -250,7 +152,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
                 color: config.textColor,
                 opacity: 0.8
             }}> 
-                Bienvenido {userData.data.nombre}, selecciona la opción:
+                Bienvenido, selecciona la opción:
             </h2>
 
             {/* BOTONES GRANDES CENTRO */}
@@ -266,7 +168,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
                 <div style={{ display: 'flex', gap: 60 }}>
                     {/* Entrada Jornada */}
                     <div
-                        onClick={() => handlePressButton('in', userData, onValidCard)}
+                        onClick={() => handlePressButton ('in', userData, onValidCard)}
                         className="pressed-effect"
                         style={{
                             backgroundImage: `linear-gradient${breakState !== 'processing' && pauseState !== 'processing' && isStartOfWorkday ? '(rgba(0,0,0,0.4), rgba(0,0,0,0.3))' : '(rgba(255,255,255,0.0), rgba(0,0,0,0.2))'}, url(${breakState === 'processing' || pauseState === 'processing' ? pauseHolder : buttonBackgroundByCompany.entradaImg[config.empresa]})`,
@@ -292,7 +194,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
                     </div>
                     {/* Salida Jornada */}
                     <div 
-                        onClick={() => handlePressButton('out', userData, onValidCard)}
+                        onClick={() => handlePressButton ('out', userData, onValidCard)}
                         className="pressed-effect"
                         style={{
                             backgroundImage: `linear-gradient(rgba(255,255,255,0.0), rgba(0,0,0,0.2)), url(${(breakState === 'processing' || pauseState === 'processing') ? pauseHolder : buttonBackgroundByCompany.salidaImg[config.empresa]})`,
@@ -320,7 +222,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
                 <div style={{ display: 'flex', gap: 60 }}>
                     {/* Inicio Comida */}
                     <div
-                        onClick={() => handlePressButton('pause', userData, onValidCard)}
+                        onClick={() => handlePressButton ('pause', userData, onValidCard)}
                         className="pressed-effect"
                         style={{
                             backgroundImage: `linear-gradient${pauseState !== 'processing' && breakState === 'disabled' ? '(rgba(0,0,0,0.5), rgba(0,0,0,0.5))' : '(rgba(255,255,255,0.0), rgba(0,0,0,0.2))'}, url(${breakState === 'processing' || pauseState === 'processing' ? pauseHolder : buttonBackgroundByCompany.inicioComidaImg[config.empresa]})`,
@@ -346,7 +248,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
                     {/* Final Comida */}
                     <div
                         className="pressed-effect"
-                        onClick={() => handlePressButton('restart', userData, onValidCard)}                        
+                        onClick={() => handlePressButton ('restart', userData, onValidCard)}                        
                         style={{
                             backgroundImage: `linear-gradient${pauseState !== 'processing' && breakState === 'disabled' ? '(rgba(0,0,0,0.5), rgba(0,0,0,0.5))' : '(rgba(255,255,255,0.0), rgba(0,0,0,0.2))'}, url(${pauseState === 'processing' ? pauseHolder : buttonBackgroundByCompany.finalComidaImg[config.empresa]})`,
                             backgroundRepeat: 'no-repeat',
@@ -370,10 +272,12 @@ const FichajesPage = ({ onValidCard, userData}) => {
                     </div>
                 </div>
             </div>
-            {/* <div>{JSON.stringify(offlineUsers)}</div>
-            <div>{JSON.stringify(userData)}</div> */}
+            
+            {/* <div>Offlineusers {JSON.stringify(offlineUsers)}</div>
+            <div>Userdata {JSON.stringify(userData)}</div>             */}
             
             {/* BOTONES PEQUEÑOS ABAJO */}
+            
             <div style={{
                 display: 'flex',
                 flexDirection: 'row',
@@ -383,8 +287,8 @@ const FichajesPage = ({ onValidCard, userData}) => {
                 marginTop: 20,
             }}>
                 {/* Iniciar Pausa */}
-                <div
-                    onClick={() => handlePressButton('pause_restart', userData, onValidCard)}
+                {/* <div
+                    onClick={() => handlePressButton ('pause_restart')}
                     className="pressed-effect"
                     style={{
                         backgroundImage: `linear-gradient(rgba(255,255,255,0.0), rgba(0,0,0,0.2)), url(${ breakState === 'processing'? pauseHolder  : pauseState === 'available' ? pauseImg : restartImg})`,
@@ -407,7 +311,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
                     <span style={{opacity: '80%', marginLeft : 160, marginBottom: 0
                     }}> {pauseState === 'processing' ? useRealTimePause(userData.data.pause) : ''}</span>
                     
-                </div>
+                </div> */}
                 {/* <div>
                     <h2 style={{
                         fontWeight: 700,
@@ -421,36 +325,6 @@ const FichajesPage = ({ onValidCard, userData}) => {
                         
                     </h2>
                 </div> */}
-                {userData.data.chofer === 'yes' &&
-                    <div
-                        onClick={() => setModalOpen(true)}
-                        className="pressed-effect hover:siz"
-                        style={{
-                            backgroundImage: `linear-gradient(rgba(255,255,255,0.0), rgba(0,0,0,0.2))`,
-                            backgroundColor: tripState !== 'processing' ? '#0562F7' : '#0049BE',
-                            backgroundRepeat: 'no-repeat',
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center center',
-                            borderRadius: 100,
-                            width: '17vh',
-                            height: '17vh',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: '0 4px 16px #0002',
-                            color: '#fff',
-                            fontWeight: 700,
-                            fontSize: 48,
-                        }}
-                    >
-                        {/* {userData.data.inicio_viaje}
-                        <br />
-                        {userData.data.fin_viaje} */}
-                        
-                        {tripState === 'processing' ? <Icon path={mdiTruckCheck} size={'85%'} /> : <Icon path={mdiTruckFast} size={'85%'} />}
-                    </div>
-
-                }
 
                 {/* Salir */}
                 <div
@@ -475,18 +349,9 @@ const FichajesPage = ({ onValidCard, userData}) => {
                     }}>
                 </div>
             </div>
-            <VehicleModal
-                isOpen={modalOpen}
-                onClose={() => setModalOpen(false)}
-                vehicleList={vehicleList}
-                userData={userData}
-                onValidCard={onValidCard}
-                tripState={tripState}
-            />
 
         </div>
-        
-    )
+  );
 };
 
-export default FichajesPage;
+export default FichajesPageOffline;
