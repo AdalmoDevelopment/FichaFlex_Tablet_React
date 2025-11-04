@@ -92,7 +92,7 @@ const handleKeyDown = async (e) => {
 			// opcional: actualizar también el store para mantenerlo fresco
 			updateUser(cardBuffer, merged);
 
-			console.log(`${Date()} ✅ Tarjeta válida ${cardBuffer}:`, merged);
+			console.log(`${time.getDate()} ${meses[time.getMonth()]} ${time.getFullYear()} ✅ Tarjeta válida ${cardBuffer}:`, merged);
 
 			setTries(0);
           } else {
@@ -211,7 +211,7 @@ useEffect(() => {
 		color: config.textColorDatetime,
 		opacity: 0.8
 	  }}>
-		{/* {fecha} <p style={{fontSize: 10}}>{JSON.stringify(window.sqlite.logsDB?.getPendingLogs())}</p> */}
+		{fecha} {/* <p style={{fontSize: 10}}>{JSON.stringify(window.sqlite.logsDB?.getPendingLogs())}</p> */}
 	  </div>
 	  {/* Hora top-right */}
 	  <div style={{

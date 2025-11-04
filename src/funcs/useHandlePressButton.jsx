@@ -48,7 +48,9 @@ export const useHandlePressButton = () => {
   // Aseguramos que este user exista en el store
   addUserIfNotExists(userData.data.nfc_id);
 
+
         if (isStartOfWorkday && action === 'in' && pauseState !== 'processing'){
+            console.log(`${userData.data.nombre}:⚠️ Intento de inicio de jornada ${curTime}`);
             showCustomToast({ type: "warning", message: "Ya has empezado la jornada" })
         } else if (pauseState === 'processing' && action !== 'pause_restart'){
             showCustomToast({ type: "warning", message: "Termina la pausa antes de seguir" })
@@ -63,6 +65,7 @@ export const useHandlePressButton = () => {
         } else if ( action === 'restart' && userData.data.pause_time === '00:00:00' && isOnline){
             showCustomToast({ type: "warning", message: "No se puede acabar una comida no iniciada" })
         } else {
+            console.log(`${userData.data.nombre}, acción: ${action} a las ${curTime}`);
             if (isOnline) {
                     if (action === 'in') {
                         userData.data.in_time = curTime;
