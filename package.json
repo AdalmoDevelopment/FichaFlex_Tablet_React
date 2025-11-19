@@ -1,7 +1,7 @@
 {
   "name": "fichaflex-tablets-react",
   "private": true,
-  "version": "2.1.1",
+  "version": "2.1.5",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run start-api\" \"vite\" \"wait-on http://localhost:5173 && electron --no-sandbox .\"",
