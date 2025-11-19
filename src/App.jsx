@@ -53,9 +53,13 @@ const App = () => {
         <MainPage onValidCard={setNfcValidated} setUserData={setUserData} />
       ) : nfcValidated && isOnline ? (
         <FichajesPage onValidCard={setNfcValidated} userData={userData} />
-      ) : (
-        <FichajesPageOffline onValidCard={setNfcValidated} userData={userData} />
-      )}
+      ) 
+      :  
+      (
+        <MainPage onValidCard={setNfcValidated} setUserData={setUserData} />
+        //   <FichajesPageOffline onValidCard={setNfcValidated} userData={userData} />
+      )
+      }
     </>
   );
 };
