@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import entradaImgAdalmo from '../assets/adalmo_ul.png';
 import salidaImgAdalmo  from '../assets/adalmo_ur.png';
@@ -24,8 +24,9 @@ import version from '../../package.json';
 import soundalert from '../assets/audio/soundalert.wav'
 import { processVehicleTrip } from "../funcs/DriverFuncs";
 import VehicleModal from "../components/VehicleModal";
+import AdvanceModal from "../components/AdvanceModal";
 import Icon from '@mdi/react';
-import { mdiTruckCheck, mdiTruckFast  } from '@mdi/js';
+import { mdiTruckCheck, mdiTruckFast, mdiCurrencyEur  } from '@mdi/js';
 import { useOfflineStore } from "../context/OfflineStoreContext";
 import config from "../context/ConfigEnv";
 import { useHandlePressButton } from "../funcs/useHandlePressButton";
@@ -34,7 +35,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
 
     const { addUserIfNotExists, updateUser, offlineUsers } = useOfflineStore();
 
-      const handlePressButton  = useHandlePressButton();
+    const handlePressButton  = useHandlePressButton();
 
     {`
         Hay 4 condiciones en los fichajes:
@@ -66,7 +67,8 @@ const FichajesPage = ({ onValidCard, userData}) => {
         }
     };
 
-    const [modalOpen, setModalOpen] = useState(false);
+    const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
+    const [advanceModalOpen, setAdvanceModalOpen] = useState(false);
     const [vehicleList, setVehicleList] = useState([]);
 
     useEffect(() => {
@@ -115,11 +117,10 @@ const FichajesPage = ({ onValidCard, userData}) => {
         return pausa;
     };
     
-    const playSound = () => {
-        const audio = new Audio(soundalert); // Ruta relativa desde /public
-        audio.play();
-    };
-
+    // const playSound = () => {
+    //     const audio = new Audio(soundalert); // Ruta relativa desde /public
+    //     audio.play();
+    // };
 
     const isStartOfWorkday = userData.data.in_time !== '00:00:00' 
     const breakState = 
@@ -134,96 +135,12 @@ const FichajesPage = ({ onValidCard, userData}) => {
     const pauseState =
         userData.data.pause !== '00:00:00' && userData.data.restart === '00:00:00' ?
         'processing' :
-        'available'
+        'available';
     const tripState =
         userData.data.chofer !== 'yes' ? '' :
         userData.data.inicio_viaje !== '00:00:00' && userData.data.fin_viaje === '00:00:00' ?
         'processing' :
-        'available'
-    
-    // const handlePressButton = (action) => {
-    //     addUserIfNotExists(userData.data.nfc_id)
-
-    //     if (isStartOfWorkday && action === 'in' && pauseState !== 'processing'){
-    //         showCustomToast({ type: "warning", message: "Ya has empezado la jornada" })
-    //     } else if (pauseState === 'processing' && action !== 'pause_restart'){
-    //         showCustomToast({ type: "warning", message: "Termina la pausa antes de seguir" })
-    //     } else if (breakState === 'processing' && action !== 'restart'){
-    //         showCustomToast({ type: "warning", message: "Termina la comida antes de seguir" })
-    //     } else if (breakState === 'disabled' && userData.data.intensivo === 'si' && ( action === 'pause' || action === 'restart' )){
-    //         showCustomToast({ type: "warning", message: "¡Jornada intensiva!" })
-    //     } else if (breakState === 'disabled' && ( action === 'pause' || action === 'restart' )){
-    //         showCustomToast({ type: "warning", message: "Comida ya realizada" })
-    //     } 
-    //     else {
-    //         const handleRequest = async (action, message) => {
-    //             try {
-    //                 await axios.put(`http://${config.url}:3000/api/update-fichaje`, {
-    //                 ...userData.data,
-    //                 pauseState,
-    //                 action,
-    //                 delegacion : config.delegacion
-    //                 });
-    //                 showCustomToast({ type: "success", message: message })
-    //             } catch (err) {
-    //                 console.error("Error en la petición:", err);
-    //                 showCustomToast({ type: "error", message: " Ha habido un error" })
-    //             }
-    //         };
-
-    //         const curTime = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false, second: '2-digit' });
-
-    //         if (action === 'in') {
-    //             userData.data.in_time = curTime;
-    //             updateUser(userData.data.nfc_id, { in_time: curTime }); // Para el store local
-    //             handleRequest(action, 'Jornada iniciada')
-    //         } else if (action === 'out') {
-    //             const currentMonth = new Date().getMonth(); // 0 = enero, 7 = agosto
-
-    //             if (currentMonth !== 7 && userData.data.intensivo === 'no'){
-    //                 if (userData.data.total_break <= '00:00:00') {
-    //                     showCustomToast({ type: "error", message: `
-    //                         FICHAJE ERRONEO, faltan los fichajes de la comida.
-    //                         Cuando ello suceda de manera reiterada, nos veremos obligados
-    //                         a enviar avisos nominales por escrito de cara a poder justificar
-    //                         nuestro intento de cumplimiento
-    //                         de la ley ante cualquier inspección laboral.
-    //                     `, duration: 10000, height: '500px', width: '1000px'})
-    //                     // playSound()
-    //                 } else if (userData.data.total_break <= '00:20:00') {
-    //                     showCustomToast({ type: "error", message: `
-    //                         FICHAJE ERRONEO, descanso de comida mínimo de 30’
-    //                         Cuando ello suceda de manera reiterada, nos veremos obligados a
-    //                         enviar avisos nominales por escrito de cara a poder justificar
-    //                         nuestro intento de cumplimiento de la ley ante cualquier inspección.
-    //                     `, duration: 10000, height: '500px', width: '1000px'})
-    //                     // playSound()
-    //                 }
-    //             }
-    //             userData.data.out_time = curTime;
-    //             updateUser(userData.data.nfc_id, { out_time: curTime }); // Para el store local
-    //             handleRequest(action, 'Jornada finalizada')
-    //         } else if (action === 'pause') {
-    //             userData.data.pause_time = curTime;
-    //             updateUser(userData.data.nfc_id, { pause_time: curTime }); // Para el store local
-    //             handleRequest(action, 'Comida iniciada')
-    //         } else if (action === 'restart') {
-    //             userData.data.restart_time = curTime;
-    //             updateUser(userData.data.nfc_id, { restart_time: curTime }); // Para el store local
-    //             handleRequest(action, 'Comida finalizada')
-    //         } else if (action === 'pause_restart' ){
-    //             if (pauseState === 'available') {
-    //                 userData.data.pause = curTime;
-    //                 handleRequest(action, 'Pausa iniciada')
-    //             } else {
-    //                 userData.data.restart = curTime;
-    //                 handleRequest(action, 'Pausa terminada')
-    //             }
-                
-    //         }
-    //         onValidCard(false)
-    //     }
-    // }
+        'available';
 
     return (
         <div style={{
@@ -341,7 +258,6 @@ const FichajesPage = ({ onValidCard, userData}) => {
                                 {userData.data.pause_time}
                             </span>
                         }
-
                     </div>
                     {/* Final Comida */}
                     <div
@@ -366,7 +282,6 @@ const FichajesPage = ({ onValidCard, userData}) => {
                                 {userData.data.restart_time}
                             </span>
                         }
-
                     </div>
                 </div>
             </div>
@@ -423,7 +338,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
                 </div> */}
                 {userData.data.chofer === 'yes' &&
                     <div
-                        onClick={() => setModalOpen(true)}
+                        onClick={() => setVehicleModalOpen(true)}
                         className="pressed-effect hover:siz"
                         style={{
                             backgroundImage: `linear-gradient(rgba(255,255,255,0.0), rgba(0,0,0,0.2))`,
@@ -443,14 +358,36 @@ const FichajesPage = ({ onValidCard, userData}) => {
                             fontSize: 48,
                         }}
                     >
-                        {/* {userData.data.inicio_viaje}
-                        <br />
-                        {userData.data.fin_viaje} */}
-                        
                         {tripState === 'processing' ? <Icon path={mdiTruckCheck} size={'85%'} /> : <Icon path={mdiTruckFast} size={'85%'} />}
                     </div>
-
                 }
+                {/* {config.tenantId} {config.clientId} {config.clientSecret} */}
+                {new Date().getDate() > 20  || !config.tenantId || !config.clientId  || !config.clientSecret ? null :
+                    <div
+                        onClick={() => setAdvanceModalOpen(true)}
+                        className="pressed-effect hover:siz"
+                        style={{
+                            backgroundImage: `linear-gradient(rgba(255,255,255,0.0), rgba(0,0,0,0.2))`,
+                            backgroundColor: '#3ED89C',
+                            backgroundRepeat: 'no-repeat',
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center center',
+                            borderRadius: 100,
+                            width: '17vh',
+                            height: '17vh',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 4px 16px #0002',
+                            color: '#fff',
+                            fontWeight: 700,
+                            fontSize: 48,
+                        }}
+                    >
+                        <Icon className="pr-5" path={mdiCurrencyEur} size={'95%'} />
+                    </div>                
+                }
+
 
                 {/* Salir */}
                 <div
@@ -476,14 +413,18 @@ const FichajesPage = ({ onValidCard, userData}) => {
                 </div>
             </div>
             <VehicleModal
-                isOpen={modalOpen}
-                onClose={() => setModalOpen(false)}
+                isOpen={vehicleModalOpen}
+                onClose={() => setVehicleModalOpen(false)}
                 vehicleList={vehicleList}
                 userData={userData}
                 onValidCard={onValidCard}
                 tripState={tripState}
             />
-
+            <AdvanceModal
+                isOpen={advanceModalOpen}
+                onClose={() => setAdvanceModalOpen(false)}
+                userData={userData} 
+            /> 
         </div>
         
     )

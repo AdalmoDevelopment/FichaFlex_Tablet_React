@@ -9,6 +9,9 @@ const config = {
         versionPrefix: import.meta.env.VITE_TAG_VERSION_PREFIX  || window.env?.VITE_TAG_VERSION_PREFIX || 'DEFAULT',
         versionSuffix: import.meta.env.VITE_TAG_VERSION_SUFFIX  || window.env?.VITE_TAG_VERSION_SUFFIX || 'DEFAULT',
         url: import.meta.env.VITE_HOST_GLOBAL  || window.env?.VITE_HOST_GLOBAL || 'DEFAULT',
+        tenantId: import.meta.env.VITE_TENANT_ID  || window.env?.VITE_TENANT_ID || false,
+        clientId: import.meta.env.VITE_CLIENT_ID  || window.env?.VITE_CLIENT_ID || false,
+        clientSecret: import.meta.env.VITE_CLIENT_SECRET  || window.env?.VITE_CLIENT_SECRET || false,
     };
 
-    export default config;
+export default config;

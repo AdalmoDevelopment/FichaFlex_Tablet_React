@@ -91,3 +91,31 @@ button:focus-visible {
 .pressed-effect:active {
   transform: scale(0.95);
 }
+
+/* Overlay */
+.basic-overlay {
+  background-color: rgba(0, 0, 0, 0);
+  transition: background-color 150ms ease;
+}
+
+.basic-overlay.ReactModal__Overlay--after-open {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.basic-overlay.ReactModal__Overlay--before-close {
+  background-color: rgba(0, 0, 0, 0);
+}
+
+/* Modal */
+.basic-modal {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.basic-modal.ReactModal__Content--after-open {
+  opacity: 1;
+}
+
+.basic-modal.ReactModal__Content--before-close {
+  opacity: 0;
+}

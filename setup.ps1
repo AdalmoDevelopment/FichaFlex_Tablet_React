@@ -79,6 +79,9 @@ if (-not (Test-Path $envFilePath)) {
     $dbUser = Read-Host "DB_USER"
     $dbPass = Read-Host "DB_PASSWORD"
     $dbName = Read-Host "DB_DATABASE"
+    $tenantId = Read-Host "TENANT_ID"
+    $clientId = Read-Host "CLIENT_ID"
+    $clientSecret = Read-Host "CLIENT_SECRET"
 
     $envContent = @"
 # Datos únicos que envía esta tablet junto a los datos de fichaje
@@ -98,6 +101,13 @@ DB_PORT = $dbPort
 DB_USER = "$dbUser"
 DB_PASSWORD = "$dbPass"
 DB_DATABASE = "$dbName"
+
+#Configs para el envío de mail de peticiones de anticipos
+ADVANCES_FROM_MAIL = 'rrhh@adalmo.com'
+
+TENANT_ID = "$tenantId"
+CLIENT_ID = "$clientId"
+CLIENT_SECRET = "$clientSecret"
 "@
 
     Set-Content -Path $envFilePath -Value $envContent -Encoding UTF8
