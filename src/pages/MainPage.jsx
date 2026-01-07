@@ -83,7 +83,8 @@ const handleKeyDown = async (e) => {
 
 			const merged = {
 				...response.data.data,
-				...filteredOffline, // offline tiene prioridad
+				// Comentado porque causa conflictos
+				// ...filteredOffline, // offline tiene prioridad
 				nfc_id: cardBuffer 
 			};
 
@@ -110,43 +111,49 @@ const handleKeyDown = async (e) => {
 		  }
         }
       } else {
-        // 🔹 flujo offline → placeholder
-        console.log("📴 Validación offline con tarjeta:", cardBuffer);
+		showCustomToast({ type: "error", message: "Dispositivo sin conexión." });
+        console.error(`Intento de acción sin conexión, tarjeta: ${cardBuffer}`);
+	  }	  
+	
+	// Lógica offline comentada temporalmente:
+	//   else {
+    //     // 🔹 flujo offline → placeholder
+    //     console.log("📴 Validación offline con tarjeta:", cardBuffer);
 
-		// 📴 Validación offline
-		onValidCard(true);
+	// 	// 📴 Validación offline
+	// 	onValidCard(true);
 
-		// 🔹 ¿Ya existe este usuario en el store?
-		if (offlineUsers[cardBuffer]) {
-		// Ya lo tenías → usa esos datos
-		setUserData({
-			data: {
-			...offlineUsers[cardBuffer],
-			nfc_id: cardBuffer
-			}
-		});
-		} else {
-		// No existe → créalo en el store y en userData
-		addUserIfNotExists(cardBuffer);
+	// 	// 🔹 ¿Ya existe este usuario en el store?
+	// 	if (offlineUsers[cardBuffer]) {
+	// 	// Ya lo tenías → usa esos datos
+	// 	setUserData({
+	// 		data: {
+	// 		...offlineUsers[cardBuffer],
+	// 		nfc_id: cardBuffer
+	// 		}
+	// 	});
+	// 	} else {
+	// 	// No existe → créalo en el store y en userData
+	// 	addUserIfNotExists(cardBuffer);
 
-		setUserData({
-			data: {
-			nfc_id: cardBuffer,
-			in_time: "00:00:00",
-			out_time: "00:00:00",
-			pause_time: "00:00:00",
-			restart_time: "00:00:00",
-			pause: "00:00:00",
-			restart: "00:00:00",
-			intensivo: "no",
-			dia_fichaje: "lunes",
-			}
-		});
-		}
+	// 	setUserData({
+	// 		data: {
+	// 		nfc_id: cardBuffer,
+	// 		in_time: "00:00:00",
+	// 		out_time: "00:00:00",
+	// 		pause_time: "00:00:00",
+	// 		restart_time: "00:00:00",
+	// 		pause: "00:00:00",
+	// 		restart: "00:00:00",
+	// 		intensivo: "no",
+	// 		dia_fichaje: "lunes",
+	// 		}
+	// 	});
+	// 	}
 
-        showCustomToast({ type: "success", message: "Tarjeta validada (modo offline)" });
+    //     showCustomToast({ type: "success", message: "Tarjeta validada (modo offline)" });
 
-      }
+    //   }
 	  
 	  setCardBuffer(""); // Limpia después de cada intento 
     }
