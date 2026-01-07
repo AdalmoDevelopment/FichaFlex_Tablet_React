@@ -5,9 +5,16 @@ import cors from 'cors';
 import dotenv from 'dotenv'; 
 dotenv.config();
 import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import { graphClient } from './outlook/getCredentials.js';
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
+const { anticiposPreset } = require('./presets/mailPresets')
+const fs = require('fs');
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
@@ -23,6 +30,15 @@ const db = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0
 });
+
+let conn;
+
+async function initDb() {
+  conn = await db.getConnection();
+  console.log('DB conectada');
+}
+
+initDb();
 
 setInterval(async () => {
   try {
@@ -89,7 +105,8 @@ app.post('/api/validate', async (req, res) => {
   }
   try {
     const [rows] = await db.query(`
-      SELECT 
+      SELECT
+        u.id as id_user,
         u.nombre,
         u.chofer,
         rn.in_time,
@@ -150,10 +167,9 @@ app.put('/api/update-fichaje', async (req, res) => {
   let { fechaTarget } = req.body;
   console.log('Datos:', req.body)
 
-  const conn = await db.getConnection();
   await conn.beginTransaction();
 
-let fechaTargetSQL;
+  let fechaTargetSQL;
 
   if (action === 'out' && in_time && out_time < '08:00:00') {
     console.log("🕒 Fichaje nocturno detectado, aplicando fecha del día anterior");
@@ -248,7 +264,6 @@ app.post('/procesarRegistrosVehiculos', async (req, res) => {
     kmsProximaRevisionManual = null;
   }
 
-  const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
 
@@ -329,6 +344,54 @@ app.post('/vehiculos', async (req, res) => {
   } catch (error) {
     console.error('Error en la base de datos:', error);
     res.status(500).json({ error: 'Error interno' });
+  }
+});
+
+app.post('/procesarAnticipos', async (req, res) => {
+  const { id_user, nombre, amount, delegacion } = req.body;
+
+  try {
+    const [result] = await conn.query(
+      'INSERT INTO registros_anticipos (id_user, amount) VALUES (?, ?)',
+      [id_user, amount]
+    );
+
+    res.status(200).json({ success: true, message: 'Éxito al insertar registro anticipos ' });
+
+    if(graphClient){
+      let htmlTemplate = anticiposPreset({id_user, nombre, amount, delegacion, id_registro: result.insertId})
+
+      graphClient.api(`/users/jthomas@adalmo.com/sendMail`).post({
+        message: {
+          subject: 'Petición anticipo FichaFlex',
+          body: {
+            contentType: 'HTML',
+            content: htmlTemplate,
+          },
+          toRecipients: [{
+            emailAddress: {
+              address: process.env.ADVANCES_FROM_MAIL,
+            },
+          }],
+          attachments: [{
+            '@odata.type': '#microsoft.graph.fileAttachment',
+            name: 'firma.png',
+            contentId: 'fichaflexImage',
+            isInline: true,
+            contentBytes: fs.readFileSync(
+              path.resolve(__dirname, '../src/assets/FichAdalmoFlexCompress.png')
+            ).toString('base64'),
+          }]
+        },
+        saveToSentItems: false,
+      });
+    }
+  } catch (err) {
+    await conn.rollback();
+    console.error('Error al insertar registro anticipos ', err)
+    res.status(500).json({ success: false, message: 'Error al insertar registro anticipos ' });
+  } finally {
+    conn.release();
   }
 });
 
