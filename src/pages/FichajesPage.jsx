@@ -387,8 +387,6 @@ const FichajesPage = ({ onValidCard, userData}) => {
                         <Icon className="pr-5" path={mdiCurrencyEur} size={'95%'} />
                     </div>                
                 }
-
-
                 {/* Salir */}
                 <div
                     onClick={() => onValidCard(false)}
@@ -426,7 +424,6 @@ const FichajesPage = ({ onValidCard, userData}) => {
                 userData={userData} 
             /> 
         </div>
-        
     )
 };
 

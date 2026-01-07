@@ -68,6 +68,18 @@ const handleKeyDown = async (e) => {
           });
 
           if (response.data.valid) {
+
+			if (response.data.data.user_notified === 0) {
+				showCustomToast({
+					type: response.data.data.advance_accepted === 1 ? 'success'
+						: 'warning',
+					message: `El anticipo de ${response.data.data.advance_amount}€ 
+						socilitado ha sido ${response.data.data.advance_accepted === 1 ? 'aceptado': 'denegado'
+					}`,
+					duration : 6000 
+				});
+			}
+
 			onValidCard(true);
 
 			// 🔹 Mezclar datos de DB con offline

@@ -120,7 +120,12 @@ app.post('/api/validate', async (req, res) => {
         ifnull(rv.fin, '00:00:00') as fin_viaje,
         rv.vehiculos_matricula as last_vehicle,
         rn.intensivo,
-        rn.dia_fichaje
+        rn.dia_fichaje,
+        ra.id as advance_id,
+        ra.accepted as advance_accepted,
+        ra.user_notified,
+        ra.amount as advance_amount
+
       FROM users u
       LEFT JOIN registros_new rn 
           ON u.nombre = rn.usuario
@@ -142,6 +147,15 @@ app.post('/api/validate', async (req, res) => {
               GROUP BY registro_id
           ) rv2 ON rv1.id = rv2.last_id
       ) rv ON rn.id = rv.registro_id
+      LEFT JOIN (
+          SELECT ra1.*
+          FROM registros_anticipos ra1
+          INNER JOIN (
+              SELECT id_user, MAX(id) AS last_id
+              FROM registros_anticipos
+              GROUP BY id_user
+          ) ra2 ON ra1.id = ra2.last_id
+      ) ra ON u.id = ra.id_user
       WHERE u.nfc_id = ?
         AND rn.fecha = CURDATE()
       ORDER BY rn.id DESC
@@ -153,6 +167,9 @@ app.post('/api/validate', async (req, res) => {
       return res.status(404).json({ valid: false, message: 'Tarjeta no válida' });
     }
     console.log("Esto sera userData: ", rows[0])
+
+    await conn.query('UPDATE registros_anticipos SET user_notified = 1 where id = ?',
+    [ rows[0].advance_id ]);
 
     return res.json({ valid: true, data: rows[0] });
   } catch (error) {
