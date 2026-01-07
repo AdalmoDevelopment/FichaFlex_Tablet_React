@@ -361,7 +361,7 @@ app.post('/procesarAnticipos', async (req, res) => {
     if(graphClient){
       let htmlTemplate = anticiposPreset({id_user, nombre, amount, delegacion, id_registro: result.insertId})
 
-      graphClient.api(`/users/jthomas@adalmo.com/sendMail`).post({
+      graphClient.api(`/users/${process.env.ADVANCES_FROM_MAIL}/sendMail`).post({
         message: {
           subject: 'Petición anticipo FichaFlex',
           body: {
@@ -370,7 +370,7 @@ app.post('/procesarAnticipos', async (req, res) => {
           },
           toRecipients: [{
             emailAddress: {
-              address: process.env.ADVANCES_FROM_MAIL,
+              address: process.env.ADVANCES_TO_MAIL,
             },
           }],
           attachments: [{
