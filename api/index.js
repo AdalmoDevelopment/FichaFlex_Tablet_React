@@ -31,15 +31,6 @@ const db = mysql.createPool({
   queueLimit: 0
 });
 
-let conn;
-
-async function initDb() {
-  conn = await db.getConnection();
-  console.log('DB conectada');
-}
-
-initDb();
-
 setInterval(async () => {
   try {
     await db.query('SELECT 1'); // keep-alive
@@ -99,7 +90,7 @@ setInterval(async () => {
 
 app.post('/api/validate', async (req, res) => {
   const { cardNumber } = req.body;
-
+  
   if (!cardNumber) {
     return res.status(400).json({ error: 'Falta cardNumber' });
   }
@@ -167,8 +158,7 @@ app.post('/api/validate', async (req, res) => {
       return res.status(404).json({ valid: false, message: 'Tarjeta no válida' });
     }
     console.log("Esto sera userData: ", rows[0])
-
-    await conn.query('UPDATE registros_anticipos SET user_notified = 1 where id = ?',
+    await db.query('UPDATE registros_anticipos SET user_notified = 1 where id = ?',
     [ rows[0].advance_id ]);
 
     return res.json({ valid: true, data: rows[0] });
@@ -183,7 +173,7 @@ app.put('/api/update-fichaje', async (req, res) => {
   const { nfc_id, nombre, in_time, out_time, pause_time, restart_time, pause, restart, pauseState, action, delegacion } = req.body;
   let { fechaTarget } = req.body;
   console.log('Datos:', req.body)
-
+  const conn = await db.getConnection();
   await conn.beginTransaction();
 
   let fechaTargetSQL;
@@ -259,7 +249,7 @@ app.put('/api/update-fichaje', async (req, res) => {
       error: "Error en la base de datos", 
       details: err.message 
     });
-  }  finally {
+  } finally {
     conn.release();
   }
 });
@@ -280,8 +270,9 @@ app.post('/procesarRegistrosVehiculos', async (req, res) => {
   if (kmsProximaRevisionManual === '') {
     kmsProximaRevisionManual = null;
   }
-
+  const conn = await db.getConnection();
   try {
+
     await conn.beginTransaction();
 
     // 1. Obtener registro_id
@@ -368,7 +359,7 @@ app.post('/procesarAnticipos', async (req, res) => {
   const { id_user, nombre, amount, delegacion } = req.body;
 
   try {
-    const [result] = await conn.query(
+    const [result] = await db.query(
       'INSERT INTO registros_anticipos (id_user, amount) VALUES (?, ?)',
       [id_user, amount]
     );
@@ -378,37 +369,39 @@ app.post('/procesarAnticipos', async (req, res) => {
     if(graphClient){
       let htmlTemplate = anticiposPreset({id_user, nombre, amount, delegacion, id_registro: result.insertId})
 
-      graphClient.api(`/users/${process.env.ADVANCES_FROM_MAIL}/sendMail`).post({
-        message: {
-          subject: 'Petición anticipo FichaFlex',
-          body: {
-            contentType: 'HTML',
-            content: htmlTemplate,
-          },
-          toRecipients: [{
-            emailAddress: {
-              address: process.env.ADVANCES_TO_MAIL,
+      graphClient
+        .api(`/users/${process.env.ADVANCES_FROM_MAIL}/sendMail`)
+        .post({
+          message: {
+            subject: 'Petición anticipo FichaFlex',
+            body: {
+              contentType: 'HTML',
+              content: htmlTemplate,
             },
-          }],
-          attachments: [{
-            '@odata.type': '#microsoft.graph.fileAttachment',
-            name: 'firma.png',
-            contentId: 'fichaflexImage',
-            isInline: true,
-            contentBytes: fs.readFileSync(
-              path.resolve(__dirname, '../src/assets/FichAdalmoFlexCompress.png')
-            ).toString('base64'),
-          }]
-        },
-        saveToSentItems: false,
-      });
+            toRecipients: process.env.ADVANCES_TO_MAIL
+              .split(',')
+              .map(email => ({
+                emailAddress: {
+                  address: email.trim()
+                }
+              })),
+            attachments: [{
+              '@odata.type': '#microsoft.graph.fileAttachment',
+              name: 'firma.png',
+              contentId: 'fichaflexImage',
+              isInline: true,
+              contentBytes: fs.readFileSync(
+                path.resolve(__dirname, '../src/assets/FichAdalmoFlexCompress.png')
+              ).toString('base64'),
+            }]
+          },
+          saveToSentItems: false,
+        });
+
     }
   } catch (err) {
-    await conn.rollback();
     console.error('Error al insertar registro anticipos ', err)
     res.status(500).json({ success: false, message: 'Error al insertar registro anticipos ' });
-  } finally {
-    conn.release();
   }
 });
 
