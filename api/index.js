@@ -66,16 +66,16 @@ setInterval(async () => {
       // 4. Ahora que tenemos el tabletId, cerramos un log abierto si existiera
       await db.query(
         `UPDATE tablets_logs 
-         SET time_fixed = NOW()
-         WHERE id_tablet = ?
-           AND time_fixed IS NULL
-           AND id = (
-             SELECT id FROM (
-               SELECT MAX(id) AS id
-               FROM tablets_logs
-               WHERE id_tablet = ? AND time_fixed IS NULL
-             ) AS sub
-           )`,
+          SET time_fixed = NOW()
+          WHERE id_tablet = ?
+            AND time_fixed IS NULL
+            AND id = (
+              SELECT id FROM (
+                SELECT MAX(id) AS id
+                FROM tablets_logs
+                WHERE id_tablet = ? AND time_fixed IS NULL
+              ) AS sub
+            )`,
         [tabletId, tabletId]
       );
 
@@ -86,7 +86,7 @@ setInterval(async () => {
   } catch (err) {
     console.error('Error manteniendo conexión: ', err);
   }
-}, 6000);
+}, 60000);
 
 app.post('/api/validate', async (req, res) => {
   const { cardNumber } = req.body;
