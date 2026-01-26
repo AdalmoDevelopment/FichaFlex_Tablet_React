@@ -3,20 +3,24 @@ dotenv.config();
 
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
-const { saveLog } = require("./logger.cjs");  // 👈 importa aquí
+const fs = require('fs');
+const { saveLog } = require("./logger.cjs");
 
-app.disableHardwareAcceleration(); // evitar errores GPU
+app.disableHardwareAcceleration();
 
-let mainWindow;
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+
+let mainWindow = null;
 
 require(path.join(__dirname, '../api/index.js'));
 
 function createWindow() {
- console.log("📂 __dirname:", __dirname);
-  console.log("📂 preload path:", path.join(__dirname, 'preload.cjs'));
-  console.log("📂 preload exists:", require('fs').existsSync(path.join(__dirname, 'preload.cjs')));
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    return; // evita crear ventanas duplicadas
+  }
 
-  
   mainWindow = new BrowserWindow({
     fullscreen: true,
     frame: false,
@@ -25,33 +29,79 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false, // 👈 esto
+      sandbox: false,
     }
   });
 
+  const url = process.env.VITE_ENV === 'development'
+    ? 'http://localhost:5173'
+    : path.join(__dirname, '..', 'dist', 'index.html');
+
   if (process.env.VITE_ENV === 'development') {
-    // En desarrollo: Vite server
-    console.log("En desarrollo: Vite server")
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL(url);
   } else {
-    // En producción: carga archivo estático desde dist
-    console.log("En producción: carga archivo estático desde dist")
-    mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
+    mainWindow.loadFile(url);
   }
 
   mainWindow.webContents.once('did-finish-load', () => {
     mainWindow.show();
     mainWindow.focus();
-    mainWindow.webContents.focus();
-    // mainWindow.webContents.openDevTools()
+  });
+
+  mainWindow.webContents.on('render-process-gone', (event, details) => {
+    saveLog({ action: "renderer-crash", details });
+    console.error("Renderer crashed:", details);
+
+    safeRestartWindow();
+  });
+
+  mainWindow.webContents.on('unresponsive', () => {
+    saveLog({ action: "renderer-unresponsive" });
+    console.error("Renderer unresponsive");
+  });
+
+  mainWindow.on('closed', () => {
+    saveLog({ action: "window-closed" });
+    mainWindow = null;
   });
 }
 
+function safeRestartWindow() {
+  try {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.destroy();
+    }
+  } catch (e) {}
+
+  mainWindow = null;
+  setTimeout(createWindow, 1500);
+}
+
 app.whenReady().then(() => {
-  saveLog({ action: "app-started" }); // ✅ funciona
+  saveLog({ action: "app-started" });
   createWindow();
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  saveLog({ action: "window-all-closed" });
+  safeRestartWindow(); //kiosk nunca muere
+});
+
+// Watchdog kiosk
+setInterval(() => {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    saveLog({ action: "watchdog-restart" });
+    safeRestartWindow();
+  }
+}, 5000);
+
+// Errores globales Node
+process.on('uncaughtException', err => {
+  saveLog({ action: "uncaughtException", error: err.message });
+  console.error("uncaughtException:", err);
+});
+
+process.on('unhandledRejection', err => {
+  saveLog({ action: "unhandledRejection", error: err });
+  console.error("unhandledRejection:", err);
 });
