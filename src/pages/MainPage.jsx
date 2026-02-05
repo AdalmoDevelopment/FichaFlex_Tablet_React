@@ -69,7 +69,7 @@ const handleKeyDown = async (e) => {
 
           if (response.data.valid) {
 
-			if (response.data.data.user_notified === 0) {
+			if (response.data.data.user_notified === 0 && response.data.data.advance_accepted !== null) {
 				showCustomToast({
 					type: response.data.data.advance_accepted === 1 ? 'success'
 						: 'warning',
