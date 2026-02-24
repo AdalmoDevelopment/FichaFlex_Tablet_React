@@ -198,6 +198,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
                             justifyContent: 'center',
                             textAlign: 'center',
                             boxShadow: '0 4px 16px #0002',
+                            pointerEvents: (breakState === 'processing' || pauseState === 'processing') ? 'none' : 'auto',
                         }}
                     >
                         {breakState !== 'processing' && pauseState !== 'processing' && userData.data.in_time !== '00:00:00' &&
@@ -208,7 +209,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
 
                     </div>
                     {/* Salida Jornada */}
-                    <div 
+                    <div
                         onClick={() => handlePressButton('out', userData, onValidCard)}
                         className="pressed-effect"
                         style={{
@@ -223,7 +224,8 @@ const FichajesPage = ({ onValidCard, userData}) => {
                             alignItems: 'end',
                             justifyContent: 'center',
                             textAlign: 'center',
-                            boxShadow: '0 4px 16px #0002'
+                            boxShadow: '0 4px 16px #0002',
+                            pointerEvents: (breakState === 'processing' || pauseState === 'processing') ? 'none' : 'auto'
                     }}>
                         {breakState !== 'processing' && pauseState !== 'processing' && userData.data.out_time !== '00:00:00' &&
                             <span style={{ color: '#fff', fontWeight: 700, fontSize: 30, opacity: '20%'}}>
@@ -251,7 +253,8 @@ const FichajesPage = ({ onValidCard, userData}) => {
                             alignItems: 'end',
                             justifyContent: 'center',
                             textAlign: 'center',
-                            boxShadow: '0 4px 16px #0002'
+                            boxShadow: '0 4px 16px #0002',
+                            pointerEvents: (breakState === 'disabled' || breakState === 'processing' || pauseState === 'processing') ? 'none' : 'auto'
                     }}>
                         {breakState !== 'processing' && pauseState !== 'processing' && userData.data.pause_time !== '00:00:00' &&
                             <span style={{ color: '#fff', fontWeight: 700, fontSize: 30, opacity: '20%'}}>
@@ -262,7 +265,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
                     {/* Final Comida */}
                     <div
                         className="pressed-effect"
-                        onClick={() => handlePressButton('restart', userData, onValidCard)}                        
+                        onClick={() => handlePressButton('restart', userData, onValidCard)}
                         style={{
                             backgroundImage: `linear-gradient${pauseState !== 'processing' && breakState === 'disabled' ? '(rgba(0,0,0,0.5), rgba(0,0,0,0.5))' : '(rgba(255,255,255,0.0), rgba(0,0,0,0.2))'}, url(${pauseState === 'processing' ? pauseHolder : buttonBackgroundByCompany.finalComidaImg[config.empresa]})`,
                             backgroundRepeat: 'no-repeat',
@@ -275,7 +278,8 @@ const FichajesPage = ({ onValidCard, userData}) => {
                             alignItems: 'end',
                             justifyContent: 'center',
                             textAlign: 'center',
-                            boxShadow: '0 4px 16px #0002'
+                            boxShadow: '0 4px 16px #0002',
+                            pointerEvents: (breakState === 'disabled' || pauseState === 'processing') ? 'none' : 'auto'
                     }}>
                         {breakState !== 'processing' && pauseState !== 'processing' && userData.data.restart_time !== '00:00:00' &&
                             <span style={{ color: '#fff', fontWeight: 700, fontSize: 30, opacity: '20%'}}>
@@ -314,6 +318,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
                         justifyContent: 'center',
                         textAlign: 'center',
                         boxShadow: '0 4px 16px #0002',
+                        pointerEvents: breakState === 'processing' ? 'none' : 'auto',
                         color: 'white',
                         fontWeight: 700,
                         fontSize: 43,
