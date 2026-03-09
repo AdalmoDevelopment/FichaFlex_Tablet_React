@@ -52,12 +52,16 @@ export const useHandlePressButton = () => {
         if (isStartOfWorkday && action === 'in' && pauseState !== 'processing'){
             console.log(`${userData.data.nombre}:⚠️ Intento de inicio de jornada ${curTime}`);
             showCustomToast({ type: "warning", message: "Ya has empezado la jornada" })
+        } else if (action === 'out' && !isStartOfWorkday){
+            showCustomToast({ type: "warning", message: "Inicia la jornada antes de fichar salida" })
         } else if (action === 'out' && userData.data.out_time !== '00:00:00'){
             showCustomToast({ type: "warning", message: "Ya has fichado la salida" })
         } else if (pauseState === 'processing' && action !== 'pause_restart'){
             showCustomToast({ type: "warning", message: "Termina la pausa antes de seguir" })
         } else if (breakState === 'processing' && action !== 'restart'){
             showCustomToast({ type: "warning", message: "Termina la comida antes de seguir" })
+        } else if (action === 'pause' && !isStartOfWorkday){
+            showCustomToast({ type: "warning", message: "Inicia la jornada antes de fichar comida" })
         }
         //  else if (breakState === 'disabled' && userData.data.intensivo === 'si' && ( action === 'pause' || action === 'restart' )){
         //     showCustomToast({ type: "warning", message: "¡Jornada intensiva!" })

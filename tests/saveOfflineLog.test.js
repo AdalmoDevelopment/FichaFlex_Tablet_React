@@ -1,5 +1,3 @@
-import { saveOfflineLog } from "../electron/db";
+// TODO: añadir tests para saveOfflineLog cuando se reactive la funcionalidad offline
 
-test('adds 1 + 2 to equal 3', () => {
-  expect(sum(1, 2)).toBe(3);
-});
+test.todo("saveOfflineLog guarda un log correctamente");

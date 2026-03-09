@@ -38,7 +38,7 @@ const App = () => {
  
     checkAndClean();
  
-    const interval = setInterval(checkAndClean, 60 * 100);
+    const interval = setInterval(checkAndClean, 60 * 1000);
 
     return () => clearInterval(interval);
   }, [resetStore]);

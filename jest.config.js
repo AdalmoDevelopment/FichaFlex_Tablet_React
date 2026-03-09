@@ -1,8 +1,13 @@
 export default {
-  testEnvironment: "jsdom", // Simula el navegador
+  testEnvironment: "jsdom",
   transform: {
-    "^.+\\.jsx?$": "babel-jest", // Permite usar JSX y ESModules
+    "^.+\\.jsx?$": "babel-jest",
   },
   moduleFileExtensions: ["js", "jsx"],
-  setupFilesAfterEnv: ["<rootDir>/jest.setup.js"], // Config extra (matchers, mocks, etc)
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
+  testPathIgnorePatterns: ["/node_modules/"],
+  moduleNameMapper: {
+    "\\.(png|jpg|jpeg|gif|svg|wav|mp3)$": "<rootDir>/tests/__mocks__/fileMock.js",
+    "\\.(css)$": "<rootDir>/tests/__mocks__/styleMock.js",
+  },
 };

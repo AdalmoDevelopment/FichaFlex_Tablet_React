@@ -1,0 +1,14 @@
+// Mock import.meta.env for Jest
+global.importMetaEnv = {
+  VITE_EMPRESA_GLOBAL: "adalmo",
+  VITE_DELEGACION_GLOBAL: "TEST",
+  VITE_HOST_GLOBAL: "localhost",
+  VITE_BACKGROUND_COLOR: "#000",
+  VITE_BACKGROUND_COLOR_OPTIONS: "#111",
+  VITE_TEXT_COLOR: "#fff",
+  VITE_TEXT_COLOR_VERSION: "#ccc",
+  VITE_TEXT_COLOR_DATETIME: "#fff",
+  VITE_TAG_VERSION_PREFIX: "",
+  VITE_TAG_VERSION_SUFFIX: "",
+  VITE_TEXT_COLOR_TIME: "#fff",
+};

@@ -50,7 +50,7 @@ const MainPage = ({ onValidCard, setUserData }) => {
 	  if (document.activeElement !== inputRef.current) {
 		inputRef.current?.focus();
 	  }
-	}, 500); // mantiene el foco cada 0.5s
+	}, 1000); // mantiene el foco cada 1s
 
 	return () => clearInterval(focusInterval);
   }, []);
