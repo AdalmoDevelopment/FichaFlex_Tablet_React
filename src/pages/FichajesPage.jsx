@@ -367,7 +367,7 @@ const FichajesPage = ({ onValidCard, userData}) => {
                     </div>
                 }
                 {/* {config.tenantId} {config.clientId} {config.clientSecret} */}
-                {new Date().getDate() > 20  || !config.tenantId || !config.clientId  || !config.clientSecret ? null :
+                {!config.tenantId || !config.clientId  || !config.clientSecret ? null :
                     <div
                         onClick={() => setAdvanceModalOpen(true)}
                         className="pressed-effect hover:siz"
