@@ -52,7 +52,7 @@ export const useHandlePressButton = () => {
         if (isStartOfWorkday && action === 'in' && pauseState !== 'processing'){
             console.log(`${userData.data.nombre}:⚠️ Intento de inicio de jornada ${curTime}`);
             showCustomToast({ type: "warning", message: "Ya has empezado la jornada" })
-        } else if (action === 'out' && !isStartOfWorkday){
+        } else if (action === 'out' && !isStartOfWorkday && curTime > '09:00:00'){
             showCustomToast({ type: "warning", message: "Inicia la jornada antes de fichar salida" })
         } else if (action === 'out' && userData.data.out_time !== '00:00:00'){
             showCustomToast({ type: "warning", message: "Ya has fichado la salida" })
@@ -80,7 +80,6 @@ export const useHandlePressButton = () => {
                         handleRequest(action, 'Jornada iniciada')
                     } else if (action === 'out') {
                         // const currentMonth = new Date().getMonth(); // 0 = enero, 7 = agosto
-
                         // if (currentMonth !== 7 && userData.data.intensivo === 'no'){
                         //     if (userData.data.pause_time === '00:00:00' && userData.data.restart_time === '00:00:00' && userData.data.in_time !== '00:00:00') {
                         //         showCustomToast({ type: "error", message: `
