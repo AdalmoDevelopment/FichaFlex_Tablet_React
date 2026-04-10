@@ -303,10 +303,10 @@ app.post('/procesarRegistrosVehiculos', async (req, res) => {
     );
 
     // 3. Actualizar registros_new
-    await conn.query(
-      'UPDATE registros_new SET matricula = ?, kms_prox_revision = ? WHERE usuario = ? AND fecha = CURDATE()',
-      [selectedVehicle, kmsProximaRevisionManual, usuario]
-    );
+    // await conn.query(
+    //   'UPDATE registros_new SET matricula = ?, kms_prox_revision = ? WHERE usuario = ? AND fecha = CURDATE()',
+    //   [selectedVehicle, kmsProximaRevisionManual, usuario]
+    // );
 
     // 4. Insertar o actualizar viaje
     if (esViajeEnCurso) {
