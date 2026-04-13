@@ -314,20 +314,20 @@ app.post('/procesarRegistrosVehiculos', async (req, res) => {
       await conn.query(
         `
         UPDATE registros_vehiculos 
-        SET fin = CURTIME(), vehiculos_matricula = ?, kms_out = ?
+        SET fin = CURTIME(), vehiculos_matricula = ?, kms_out = ?, kms_proxima_revision = ?
         WHERE registro_id = ?
         ORDER BY id DESC LIMIT 1
       `,
-        [selectedVehicle, kmsSubmit, registroId]
+        [selectedVehicle, kmsSubmit, kmsProximaRevisionManual, registroId]
       );
     } else {
       // Nuevo viaje
       await conn.query(
         `
-        INSERT INTO registros_vehiculos (vehiculos_matricula, kms_in, inicio, registro_id)
-        VALUES (?, ?, CURTIME(), ?)
+        INSERT INTO registros_vehiculos (vehiculos_matricula, kms_in, inicio, kms_proxima_revision, registro_id)
+        VALUES (?, ?, CURTIME(), ?, ?)
       `,
-        [selectedVehicle, kmsSubmit, registroId]
+        [selectedVehicle, kmsSubmit, kmsProximaRevisionManual, registroId]
       );
     }
 
