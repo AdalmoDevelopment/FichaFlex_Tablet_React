@@ -33,7 +33,13 @@ export default function AdvanceModal({
       return;
     }
 
-    const res = await axios.post(`http://${config.url}:3000/procesarAnticipos`, { id_user: userData.data.id_user, nombre: userData.data.nombre, amount: advanceAmount, delegacion:config.delegacion });
+    let res;
+    try {
+      res = await axios.post(`http://${config.url}:3000/procesarAnticipos`, { id_user: userData.data.id_user, nombre: userData.data.nombre, amount: advanceAmount, delegacion:config.delegacion });
+    } catch (err) {
+      console.error('Error al procesar el anticipo:', err);
+      res = { data: { success: false } };
+    }
 
     if (!res.data.success) {
       showCustomToast({

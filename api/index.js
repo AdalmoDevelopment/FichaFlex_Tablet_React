@@ -5,16 +5,9 @@ import cors from 'cors';
 import dotenv from 'dotenv'; 
 dotenv.config();
 import { createRequire } from 'module';
-import { fileURLToPath } from 'url';
-import path from 'path';
-import { graphClient } from './outlook/getCredentials.js';
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
-const { anticiposPreset } = require('./presets/mailPresets')
-const fs = require('fs');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
@@ -28,19 +21,29 @@ const db = mysql.createPool({
   database: process.env.DB_DATABASE,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  connectTimeout: 10000,
+  // Sin keepAliveInitialDelay, Windows tarda ~2h en detectar una conexión TCP muerta (corte de
+  // red/wifi): las queries sobre ella se quedan colgadas y, al agotarse el pool, la API entera
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
 });
 
-setInterval(async () => {
-  try {
-    await db.query('SELECT 1'); // keep-alive
-    // console.log(`[${new Date().toISOString()}] Keep-alive enviado`);
+let keepAliveRunning = false;
 
+setInterval(async () => {
+  if (keepAliveRunning) return;
+  keepAliveRunning = true;
+
+  try {
     const delegacion = process.env.VITE_DELEGACION_GLOBAL;
+    const conn = await db.getConnection();
 
     try {
+      await conn.query('SET innodb_lock_wait_timeout = 5');
+
       // 1. Verificar si la delegación ya existe
-      const [rows] = await db.query(
+      const [rows] = await conn.query(
         'SELECT id FROM tablets WHERE delegacion = ?',
         [delegacion]
       );
@@ -50,22 +53,22 @@ setInterval(async () => {
         tabletId = rows[0].id;
 
         // 2. Si existe, actualizar last_conn
-        await db.query(
+        await conn.query(
           'UPDATE tablets SET version = ?, last_conn = NOW() WHERE delegacion = ?',
           [version, delegacion]
         );
       } else {
         // 3. Si no existe, insertar
-        const [insertResult] = await db.query(
+        const [insertResult] = await conn.query(
           'INSERT INTO tablets (delegacion, version, last_conn) VALUES (?, ?, NOW())',
           [delegacion, version]
         );
         tabletId = insertResult.insertId;
       }
 
-      // 4. Ahora que tenemos el tabletId, cerramos un log abierto si existiera
-      await db.query(
-        `UPDATE tablets_logs 
+      // 4. Cerrar un log abierto si existiera
+      await conn.query(
+        `UPDATE tablets_logs
           SET time_fixed = NOW()
           WHERE id_tablet = ?
             AND time_fixed IS NULL
@@ -80,13 +83,45 @@ setInterval(async () => {
       );
 
     } catch (error) {
-      console.error('Error en operación con base de datos:', error);
+      if (error.code !== 'ER_LOCK_WAIT_TIMEOUT') {
+        console.error('Error en operación con base de datos:', error);
+      }
+    } finally {
+      // innodb_lock_wait_timeout es de sesión: si no se restaura, la conexión vuelve al pool con
+      // 5s y los fichajes que la reutilicen fallan por lock antes de tiempo. Si ni eso responde,
+      // la conexión está rota y se descarta en vez de devolverla al pool
+      try {
+        await conn.query('SET SESSION innodb_lock_wait_timeout = DEFAULT');
+        conn.release();
+      } catch {
+        conn.destroy();
+      }
     }
 
   } catch (err) {
     console.error('Error manteniendo conexión: ', err);
+  } finally {
+    keepAliveRunning = false;
   }
 }, 60000);
+
+// Dispara un evento en el notificationService de FichaFlex Web. Destinatarios, plantilla y
+// remitente los decide la regla de ese event_type en Config → Notificaciones.
+// Fire-and-forget: un fallo solo se registra, nunca afecta a la respuesta de la tablet.
+function emitNotification(eventType, payload, { priority = 'normal', dedupeKey = null } = {}) {
+  fetch(`${process.env.FLEXA_BACK_URL}/api/notifications/emit`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.NOTIFICATIONS_API_KEY,
+    },
+    body: JSON.stringify({ event_type: eventType, payload, priority, dedupeKey }),
+  })
+    .then(async (r) => {
+      if (!r.ok) console.error(`Error emitiendo ${eventType}:`, r.status, await r.text());
+    })
+    .catch((err) => console.error(`Error emitiendo ${eventType}:`, err));
+}
 
 app.post('/api/validate', async (req, res) => {
   const { cardNumber } = req.body;
@@ -173,15 +208,13 @@ app.put('/api/update-fichaje', async (req, res) => {
   const { nfc_id, nombre, in_time, out_time, pause_time, restart_time, pause, restart, pauseState, action, delegacion } = req.body;
   let { fechaTarget } = req.body;
   console.log('Datos:', req.body)
-  const conn = await db.getConnection();
-  await conn.beginTransaction();
 
   let fechaTargetSQL;
 
   if (action === 'out' && in_time && out_time < '08:00:00') {
     console.log("🕒 Fichaje nocturno detectado, aplicando fecha del día anterior");
     fechaTargetSQL = 'DATE_SUB(CURDATE(), INTERVAL 1 DAY)';
-  } else if (fechaTarget) {
+  } else if (fechaTarget && /^\d{4}-\d{2}-\d{2}$/.test(fechaTarget)) {
     fechaTargetSQL = `'${fechaTarget}'`;
   } else {
     fechaTargetSQL = 'CURDATE()';
@@ -199,7 +232,13 @@ app.put('/api/update-fichaje', async (req, res) => {
     WHERE users.nfc_id = ? AND fecha = ${fechaTargetSQL}
   `;
   console.log('la query es: ' + query)
+  // getConnection/beginTransaction dentro del try: si fallan (conexión rota), la conexión se
+  // libera igualmente en el finally en vez de quedarse fuera del pool para siempre
+  let conn;
   try {
+    conn = await db.getConnection();
+    await conn.beginTransaction();
+
     await conn.query(query, [
       in_time, in_time,             // para el primer CASE
       out_time, out_time,           // segundo CASE
@@ -236,8 +275,43 @@ app.put('/api/update-fichaje', async (req, res) => {
     await conn.commit();
     res.json({ success: true });
 
+    // Aviso de fichaje en día no laboral (festivo, vacaciones...). El dedupeKey por registro
+    // hace que solo se notifique el primer fichaje del día aunque se emita en cada acción.
+    try {
+      const [registroRows] = await conn.query(`
+        SELECT rn.id, rn.id_user, rn.usuario, rn.tipo_fichaje,
+          DATE_FORMAT(rn.fecha, '%d/%m/%Y') AS fecha
+        FROM registros_new rn
+        JOIN users u ON rn.id_user = u.id
+        WHERE u.nfc_id = ? AND rn.fecha = ${fechaTargetSQL}
+        LIMIT 1
+      `, [nfc_id]);
+      const registro = registroRows[0];
+
+      if (registro && registro.tipo_fichaje && registro.tipo_fichaje !== 'Laboral') {
+        const hora = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        emitNotification('fichaje.aviso_no_laboral', {
+          user_id: registro.id_user,
+          idRegistro: registro.id,
+          nombre: registro.usuario,
+          fecha: registro.fecha,
+          tipo_fichaje: registro.tipo_fichaje,
+          accion: action,
+          hora,
+          delegacion,
+          subject: 'Fichaje en día no laboral FichaFlex',
+          title: 'Fichaje en día no laboral',
+          body: `${registro.usuario} ha fichado el ${registro.fecha} a las ${hora} (día ${registro.tipo_fichaje}) mediante la tablet de ${delegacion}.`,
+          link: '/fichajes',
+          type: 'info',
+        }, { dedupeKey: `fichaje-no-laboral-${registro.id}` });
+      }
+    } catch (notifErr) {
+      console.error('Error comprobando tipo_fichaje para aviso de día no laboral:', notifErr);
+    }
+
   } catch (err) {
-    await conn.rollback();
+    await conn?.rollback().catch(() => {});
 
     console.error("❌ ERROR actualizando fichaje:");
     console.error("Mensaje:", err.message);
@@ -250,7 +324,7 @@ app.put('/api/update-fichaje', async (req, res) => {
       details: err.message 
     });
   } finally {
-    conn.release();
+    conn?.release();
   }
 });
 
@@ -334,7 +408,7 @@ app.post('/procesarRegistrosVehiculos', async (req, res) => {
     await conn.commit();
     res.status(200).json({ success: true });
   } catch (err) {
-    await conn.rollback();
+    await conn.rollback().catch(() => {});
     console.error('❌ Error en /procesarRegistrosVehiculos:', err);
     res.status(500).json({ success: false, message: 'Error procesando registro de vehículo' });
   } finally {
@@ -366,39 +440,20 @@ app.post('/procesarAnticipos', async (req, res) => {
 
     res.status(200).json({ success: true, message: 'Éxito al insertar registro anticipos ' });
 
-    if(graphClient){
-      let htmlTemplate = anticiposPreset({id_user, nombre, amount, delegacion, id_registro: result.insertId})
+    const idRegistro = result.insertId;
 
-      graphClient
-        .api(`/users/${process.env.ADVANCES_FROM_MAIL}/sendMail`)
-        .post({
-          message: {
-            subject: 'Petición anticipo FichaFlex',
-            body: {
-              contentType: 'HTML',
-              content: htmlTemplate,
-            },
-            toRecipients: process.env.ADVANCES_TO_MAIL
-              .split(',')
-              .map(email => ({
-                emailAddress: {
-                  address: email.trim()
-                }
-              })),
-            attachments: [{
-              '@odata.type': '#microsoft.graph.fileAttachment',
-              name: 'firma.png',
-              contentId: 'fichaflexImage',
-              isInline: true,
-              contentBytes: fs.readFileSync(
-                path.resolve(__dirname, '../src/assets/FichAdalmoFlexCompress.png')
-              ).toString('base64'),
-            }]
-          },
-          saveToSentItems: false,
-        });
-
-    }
+    emitNotification('anticipo.aviso_peticion', {
+      user_id: id_user,
+      idRegistro,
+      nombre,
+      amount,
+      delegacion,
+      subject: 'Petición anticipo FichaFlex',
+      title: 'Petición de anticipo',
+      body: `${nombre} ha pedido un anticipo de ${amount} € mediante la tablet de ${delegacion}.`,
+      link: '/anticipos',
+      type: 'info',
+    }, { priority: 'high', dedupeKey: `anticipo-${idRegistro}` });
   } catch (err) {
     console.error('Error al insertar registro anticipos ', err)
     res.status(500).json({ success: false, message: 'Error al insertar registro anticipos ' });

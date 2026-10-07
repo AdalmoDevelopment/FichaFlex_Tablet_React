@@ -102,8 +102,9 @@ DB_USER = "$dbUser"
 DB_PASSWORD = "$dbPass"
 DB_DATABASE = "$dbName"
 
-#Configs para el envío de mail de peticiones de anticipos
-ADVANCES_FROM_MAIL = 'rrhh@adalmo.com'
+#Notificación de peticiones de anticipos (regla 'anticipo.pedido' en FichaFlex Web)
+FLEXA_BACK_URL = 'http://192.168.50.206:3001'
+NOTIFICATIONS_API_KEY = ''
 
 TENANT_ID = "$tenantId"
 CLIENT_ID = "$clientId"
@@ -113,19 +114,21 @@ CLIENT_SECRET = "$clientSecret"
     Set-Content -Path $envFilePath -Value $envContent -Encoding UTF8
 }
 
-# Crear acceso directo para iniciar app (con build previo)
-if (-not (Test-Path $shortcutStartPath)) {
-    $shell = New-Object -ComObject WScript.Shell
-    $shortcut = $shell.CreateShortcut($shortcutStartPath)
-    $powershellPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
-    $args = "-NoExit -Command `"cd '$projectDir'; npm run build; npm run start`""
-    $shortcut.TargetPath = $powershellPath
-    $shortcut.Arguments = $args
-    $shortcut.WorkingDirectory = $projectDir
-    $shortcut.WindowStyle = 1
-    $shortcut.Description = "Iniciar FichaFlex con build y start"
-    $shortcut.Save()
-}
+# Arranque de la app: el build ya lo hace este script tras actualizar el repo, así que al
+# arrancar solo se compila si falta dist (p.ej. carpeta recién clonada sin pasar por aquí)
+$startCommand = "cd '$projectDir'; if (-not (Test-Path 'dist\index.html')) { npm run build }; npm run start"
+
+# Crear acceso directo para iniciar app. Se recrea siempre para que los cambios en
+# $startCommand lleguen también a las tablets ya instaladas
+$shell = New-Object -ComObject WScript.Shell
+$shortcut = $shell.CreateShortcut($shortcutStartPath)
+$powershellPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+$shortcut.TargetPath = $powershellPath
+$shortcut.Arguments = "-NoExit -Command `"$startCommand`""
+$shortcut.WorkingDirectory = $projectDir
+$shortcut.WindowStyle = 1
+$shortcut.Description = "Iniciar FichaFlex"
+$shortcut.Save()
 
 # Crear acceso directo al archivo .env
 if (-not (Test-Path $shortcutEnvPath)) {
@@ -137,19 +140,15 @@ if (-not (Test-Path $shortcutEnvPath)) {
     $shortcut.Save()
 }
 
-# Crear acceso directo en carpeta Startup para que arranque al reiniciar
-if (-not (Test-Path $startupShortcutPath)) {
-    $shell = New-Object -ComObject WScript.Shell
-    $shortcut = $shell.CreateShortcut($startupShortcutPath)
-    $powershellPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
-    $args = "-WindowStyle Hidden -ExecutionPolicy Bypass -Command `"cd '$projectDir'; npm run build; npm run start`""
-    $shortcut.TargetPath = $powershellPath
-    $shortcut.Arguments = $args
-    $shortcut.WorkingDirectory = $projectDir
-    $shortcut.Description = "Inicio automático FichaFlex"
-    $shortcut.WindowStyle = 7
-    $shortcut.Save()
-}
+# Crear acceso directo en carpeta Startup para que arranque al reiniciar (se recrea siempre,
+# igual que el del escritorio)
+$shortcut = $shell.CreateShortcut($startupShortcutPath)
+$shortcut.TargetPath = $powershellPath
+$shortcut.Arguments = "-WindowStyle Hidden -ExecutionPolicy Bypass -Command `"$startCommand`""
+$shortcut.WorkingDirectory = $projectDir
+$shortcut.Description = "Inicio automático FichaFlex"
+$shortcut.WindowStyle = 7
+$shortcut.Save()
 
 # Programar tarea diaria para ejecutar este script y mantener la tablet actualizada
 
