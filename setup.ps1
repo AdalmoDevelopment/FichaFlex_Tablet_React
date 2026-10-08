@@ -1,4 +1,4 @@
-# Ruta del proyecto
+﻿# Ruta del proyecto
 $projectDir = "C:\FichaFlex_Tablet_React"
 
 # URL del repo
@@ -15,6 +15,18 @@ $shortcutStartPath = Join-Path $desktopPath "Start_FichaFlex.lnk"
 $shortcutEnvPath = Join-Path $desktopPath "Ver_Config_ENV.lnk"
 $startupShortcutPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\FichaFlex_Autostart.lnk"
 
+# api_key de la app registrada en FichaFlex Web (POST /api/config/notification-apps). No se
+# commitea: se rellena solo en la copia del instalador, no en la del repo
+$notificationsApiKey = ''
+
+# Variables que todo .env debe tener. Si a un .env ya existente le falta alguna (tablets
+# instaladas antes de que existiera), se añade con este valor por defecto
+$envDefaults = [ordered]@{
+    FLEXA_BACK_URL        = "'http://192.168.50.206:3001'"
+    NOTIFICATIONS_API_KEY = "'$notificationsApiKey'"
+    PRE_PROD              = ""
+}
+
 # Funciones para chequear git y node
 function Check-Git {
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
@@ -30,14 +42,53 @@ function Check-Node {
     }
 }
 
+# Añade al .env las variables de $envDefaults que le falten, sin tocar las que ya tiene. No
+# pregunta nada: la tarea nocturna no es interactiva y un Read-Host la dejaría bloqueada
+function Add-MissingEnvVars {
+    $content = Get-Content -Path $envFilePath -Raw -Encoding UTF8
+    $missing = @()
+    foreach ($key in $envDefaults.Keys) {
+        if ($content -notmatch "(?m)^\s*$key\s*=") { $missing += "$key = $($envDefaults[$key])" }
+    }
+    if ($missing.Count -gt 0) {
+        Write-Host "Añadiendo variables nuevas al .env: $($missing -join ', ')"
+        $block = "`r`n# Añadido por setup $(Get-Date -Format 'yyyy-MM-dd')`r`n" + ($missing -join "`r`n") + "`r`n"
+        Add-Content -Path $envFilePath -Value $block -Encoding UTF8 -NoNewline
+    }
+}
+
 # Chequeos
 Check-Git
 Check-Node
 
-# Rama a desplegar: PRE_PROD = true en el .env de la tablet → pre-prod, si no → main.
-# El .env está en .gitignore, así que sobrevive al reset --hard de abajo
+# Instalación nueva (sin .env): el formulario se pregunta aquí, antes de clonar, porque de la
+# respuesta "tablet de test" depende la rama a clonar. El .env se escribe más abajo, cuando la
+# carpeta del proyecto ya existe (git clone no admite una carpeta destino con ficheros)
+$isNewInstall = -not (Test-Path $envFilePath)
+if ($isNewInstall) {
+    Write-Host "Vamos a configurar los valores de entorno (.env)..."
+
+    $viteHost = Read-Host "VITE_HOST_GLOBAL (IP o dominio del backend)"
+    $dbHost = Read-Host "DB_HOST (servidor base de datos)"
+    $dbPort = Read-Host "DB_PORT (puerto base de datos, default 3306)"
+    if (-not $dbPort) { $dbPort = 3306 }
+
+    $dbUser = Read-Host "DB_USER"
+    $dbPass = Read-Host "DB_PASSWORD"
+    $dbName = Read-Host "DB_DATABASE"
+    $tenantId = Read-Host "TENANT_ID"
+    $clientId = Read-Host "CLIENT_ID"
+    $clientSecret = Read-Host "CLIENT_SECRET"
+    $esTest = Read-Host "¿Es tablet de test? (si/no)"
+    $preProd = if ($esTest -match '^\s*(s|si|sí|y|yes)\s*$') { 'true' } else { '' }
+}
+
+# Rama a desplegar: PRE_PROD = true en el .env de la tablet → pre-prod; vacío o cualquier otro
+# valor → main. El .env está en .gitignore, así que sobrevive al reset --hard de abajo
 $branch = "main"
-if (Test-Path $envFilePath) {
+if ($isNewInstall) {
+    if ($preProd -eq 'true') { $branch = "pre-prod" }
+} else {
     $preProdLine = Select-String -Path $envFilePath -Pattern '^\s*PRE_PROD\s*=\s*[''"]?true[''"]?\s*(#.*)?$' -CaseSensitive:$false
     if ($preProdLine) { $branch = "pre-prod" }
 }
@@ -76,22 +127,8 @@ if ($nodeProcs) {
     Start-Sleep 3
 }
 
-# Crear archivo .env con contenido específico si no existe
-if (-not (Test-Path $envFilePath)) {
-    Write-Host "Vamos a configurar los valores de entorno (.env)..."
-
-    $viteHost = Read-Host "VITE_HOST_GLOBAL (IP o dominio del backend)"
-    $dbHost = Read-Host "DB_HOST (servidor base de datos)"
-    $dbPort = Read-Host "DB_PORT (puerto base de datos, default 3306)"
-    if (-not $dbPort) { $dbPort = 3306 }
-
-    $dbUser = Read-Host "DB_USER"
-    $dbPass = Read-Host "DB_PASSWORD"
-    $dbName = Read-Host "DB_DATABASE"
-    $tenantId = Read-Host "TENANT_ID"
-    $clientId = Read-Host "CLIENT_ID"
-    $clientSecret = Read-Host "CLIENT_SECRET"
-
+# Crear el .env con las respuestas del formulario (instalación nueva) o completar el existente
+if ($isNewInstall) {
     $envContent = @"
 # Datos únicos que envía esta tablet junto a los datos de fichaje
 VITE_DELEGACION_GLOBAL = 'Ses Veles Central'
@@ -111,12 +148,12 @@ DB_USER = "$dbUser"
 DB_PASSWORD = "$dbPass"
 DB_DATABASE = "$dbName"
 
-#Notificación de peticiones de anticipos (regla 'anticipo.pedido' en FichaFlex Web)
-FLEXA_BACK_URL = 'http://192.168.50.206:3001'
-NOTIFICATIONS_API_KEY = ''
+#Notificaciones (anticipos, fichajes en día no laboral) vía FichaFlex Web
+FLEXA_BACK_URL = $($envDefaults.FLEXA_BACK_URL)
+NOTIFICATIONS_API_KEY = $($envDefaults.NOTIFICATIONS_API_KEY)
 
-#true → el setup despliega la rama pre-prod en vez de main
-PRE_PROD = false
+#Tablet de test: true → el setup despliega la rama pre-prod; vacío → main
+PRE_PROD = $preProd
 
 TENANT_ID = "$tenantId"
 CLIENT_ID = "$clientId"
@@ -124,6 +161,8 @@ CLIENT_SECRET = "$clientSecret"
 "@
 
     Set-Content -Path $envFilePath -Value $envContent -Encoding UTF8
+} else {
+    Add-MissingEnvVars
 }
 
 # Arranque de la app: el build ya lo hace este script tras actualizar el repo, así que al
@@ -161,6 +200,19 @@ $shortcut.WorkingDirectory = $projectDir
 $shortcut.Description = "Inicio automático FichaFlex"
 $shortcut.WindowStyle = 7
 $shortcut.Save()
+
+# Permitir que la tablet responda al ping (ICMPv4 echo) desde FlexA: el panel Config > Tablets
+# hace ping a la IP que reporta la app cuando deja de llegar su latido, para distinguir "app
+# cerrada" (el equipo responde) de "sin red / apagada". Windows lo bloquea por defecto.
+# Idempotente: solo se crea si no existe. Necesita permisos de administrador (la tarea diaria
+# corre con /RL HIGHEST); si falla, la app sigue funcionando igual.
+$pingRuleName = "FichaFlex - Ping desde FlexA"
+netsh advfirewall firewall show rule name="$pingRuleName" > $null 2>&1
+if ($LASTEXITCODE -ne 0) {
+    netsh advfirewall firewall add rule name="$pingRuleName" protocol=icmpv4:8,any dir=in action=allow > $null
+    if ($LASTEXITCODE -eq 0) { Write-Host "Regla de firewall '$pingRuleName' creada." }
+    else { Write-Host "No se pudo crear la regla de firewall para el ping (¿sin permisos de administrador?)." }
+}
 
 # Programar tarea diaria para ejecutar este script y mantener la tablet actualizada
 

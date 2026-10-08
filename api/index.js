@@ -2,7 +2,8 @@
 import express from 'express';
 import mysql from 'mysql2/promise';
 import cors from 'cors';
-import dotenv from 'dotenv'; 
+import dotenv from 'dotenv';
+import os from 'os';
 dotenv.config();
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
@@ -31,6 +32,21 @@ const db = mysql.createPool({
 
 let keepAliveRunning = false;
 
+// IP local del equipo, para que FlexA pueda hacerle ping cuando deja de llegar el latido y
+// distinguir "app cerrada" (el equipo responde) de "sin red / apagada" (no responde). Se
+// prefieren las IPs privadas (LAN/VPN) a cualquier otra interfaz.
+const ipLocal = () => {
+  const candidatas = Object.values(os.networkInterfaces())
+    .flat()
+    .filter((i) => i && i.family === 'IPv4' && !i.internal && !i.address.startsWith('169.254.'))
+    .map((i) => i.address);
+  const privada = candidatas.find((ip) => /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(ip));
+  return privada || candidatas[0] || null;
+};
+// Si la BD aún no tiene la columna tablets.ip (migración de FlexA sin aplicar), se sigue con el
+// latido de siempre en vez de dejar de reportar.
+let reportarIp = true;
+
 setInterval(async () => {
   if (keepAliveRunning) return;
   keepAliveRunning = true;
@@ -52,11 +68,24 @@ setInterval(async () => {
       if (rows.length > 0) {
         tabletId = rows[0].id;
 
-        // 2. Si existe, actualizar last_conn
-        await conn.query(
-          'UPDATE tablets SET version = ?, last_conn = NOW() WHERE delegacion = ?',
-          [version, delegacion]
-        );
+        // 2. Si existe, actualizar last_conn (y la IP, si la BD ya tiene la columna)
+        if (reportarIp) {
+          try {
+            await conn.query(
+              'UPDATE tablets SET version = ?, last_conn = NOW(), ip = ? WHERE delegacion = ?',
+              [version, ipLocal(), delegacion]
+            );
+          } catch (error) {
+            if (error.code !== 'ER_BAD_FIELD_ERROR') throw error;
+            reportarIp = false;
+          }
+        }
+        if (!reportarIp) {
+          await conn.query(
+            'UPDATE tablets SET version = ?, last_conn = NOW() WHERE delegacion = ?',
+            [version, delegacion]
+          );
+        }
       } else {
         // 3. Si no existe, insertar
         const [insertResult] = await conn.query(
