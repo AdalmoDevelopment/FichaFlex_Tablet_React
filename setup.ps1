@@ -34,21 +34,30 @@ function Check-Node {
 Check-Git
 Check-Node
 
+# Rama a desplegar: PRE_PROD = true en el .env de la tablet → pre-prod, si no → main.
+# El .env está en .gitignore, así que sobrevive al reset --hard de abajo
+$branch = "main"
+if (Test-Path $envFilePath) {
+    $preProdLine = Select-String -Path $envFilePath -Pattern '^\s*PRE_PROD\s*=\s*[''"]?true[''"]?\s*(#.*)?$' -CaseSensitive:$false
+    if ($preProdLine) { $branch = "pre-prod" }
+}
+Write-Host "Rama a desplegar: $branch"
+
 # Clonar o actualizar repo
 if (-not (Test-Path $projectDir)) {
     Write-Host "Carpeta no existe. Clonando repo..."
-    git clone $gitRepoUrl $projectDir
+    git clone -b $branch $gitRepoUrl $projectDir
 } else {
     Write-Host "Carpeta existe. Actualizando repo..."
-    Set-Location $projectDir 
+    Set-Location $projectDir
 
     git reset --hard
-    
-    git checkout main 
-    
+
     git fetch origin
-    
-    git reset --hard origin/main 
+
+    # -B crea la rama local si no existe (tablet que pasa a pre-prod por primera vez) y la
+    # deja igual que la remota
+    git checkout -B $branch "origin/$branch"
 
 }
 
@@ -105,6 +114,9 @@ DB_DATABASE = "$dbName"
 #Notificación de peticiones de anticipos (regla 'anticipo.pedido' en FichaFlex Web)
 FLEXA_BACK_URL = 'http://192.168.50.206:3001'
 NOTIFICATIONS_API_KEY = ''
+
+#true → el setup despliega la rama pre-prod en vez de main
+PRE_PROD = false
 
 TENANT_ID = "$tenantId"
 CLIENT_ID = "$clientId"
